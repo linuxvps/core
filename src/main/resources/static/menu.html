@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>منوی اصلی</title>
+</head>
+<body>
+<h2>📌 منوی دسترسی</h2>
+<ul id="menu">
+    <li id="adminMenu" style="display: none;"><a href="/admin-panel.html">مدیریت کاربران</a></li>
+    <li id="user1Menu" style="display: none;"><a href="/first-user.html">دسترسی سطح ۱</a></li>
+    <li id="user2Menu" style="display: none;"><a href="/second-user.html">دسترسی سطح ۲</a></li>
+</ul>
+
+<script>
+    fetch('/admin/users/me/roles')
+        .then(res => res.json())
+        .then(roles => {
+            console.log("نقش‌های کاربر:", roles);
+            if (roles.includes('ROLE_ADMIN')) {
+                document.getElementById('adminMenu').style.display = 'block';
+            }
+            if (roles.includes('ROLE_USER1')) {
+                document.getElementById('user1Menu').style.display = 'block';
+            }
+            if (roles.includes('ROLE_USER2')) {
+                document.getElementById('user2Menu').style.display = 'block';
+            }
+        });
+</script>
+</body>
+</html>
