@@ -1,0 +1,76 @@
+<!-- user-list.html -->
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>لیست کاربران</title>
+</head>
+<body>
+<h2>مدیریت کاربران</h2>
+
+<table border="1">
+    <thead>
+    <tr>
+        <th>شناسه</th>
+        <th>نام کاربری</th>
+        <th>نقش‌ها</th>
+        <th>عملیات</th>
+    </tr>
+    </thead>
+    <tbody id="userTableBody">
+    <!-- داده‌ها به صورت داینامیک اضافه می‌شن -->
+    </tbody>
+</table>
+
+<p id="message"></p>
+
+<a href="create-user.html">➕ افزودن کاربر جدید</a>
+
+<script>
+    function loadUsers() {
+        fetch('/admin/users')
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.getElementById('userTableBody');
+                tbody.innerHTML = ''; // پاک‌کردن قبل از بارگذاری مجدد
+                data.forEach(user => {
+                    const tr = document.createElement('tr');
+
+                    tr.innerHTML = `
+                        <td>${user.id}</td>
+                        <td>${user.username}</td>
+                        <td>${user.roles.join(', ')}</td>
+                        <td>
+                            <button onclick="deleteUser(${user.id})">🗑 حذف</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            })
+            .catch(error => {
+                document.getElementById('message').innerText = '❌ خطا در دریافت کاربران';
+                console.error(error);
+            });
+    }
+
+    function deleteUser(id) {
+        if (confirm('آیا مطمئن هستید که می‌خواهید کاربر را حذف کنید؟')) {
+            fetch(`/admin/users/${id}`, {
+                method: 'DELETE'
+            })
+                .then(response => {
+                    if (response.ok) {
+                        document.getElementById('message').innerText = '✅ کاربر حذف شد';
+                        loadUsers(); // بارگذاری مجدد
+                    } else {
+                        document.getElementById('message').innerText = '❌ خطا در حذف کاربر';
+                    }
+                });
+        }
+    }
+
+    // بارگذاری اولیه
+    loadUsers();
+</script>
+</body>
+</html>

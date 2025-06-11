@@ -1,0 +1,57 @@
+<!-- create-user.html -->
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>افزودن کاربر جدید</title>
+</head>
+<body>
+<h2>ایجاد کاربر جدید</h2>
+
+<form id="createUserForm">
+    <label for="username">نام کاربری:</label>
+    <input type="text" id="username" name="username" required><br><br>
+
+    <label for="password">رمز عبور:</label>
+    <input type="password" id="password" name="password" required><br><br>
+
+    <label for="roles">نقش‌ها (جدا با ,):</label>
+    <input type="text" id="roles" name="roles" placeholder="ROLE_ADMIN,ROLE_USER"><br><br>
+
+    <button type="submit">ثبت</button>
+</form>
+
+<p id="statusMessage"></p>
+
+<a href="user-list.html">بازگشت به لیست</a>
+
+<script>
+    document.getElementById('createUserForm').addEventListener('submit', function (event) {
+        event.preventDefault();
+
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const rolesText = document.getElementById('roles').value;
+        const roles = rolesText.split(',').map(r => r.trim());
+
+        fetch('/admin/users', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({username, password, roles})
+        }).then(res => {
+            if (res.ok) {
+                document.getElementById('statusMessage').innerText = '✅ کاربر با موفقیت ثبت شد.';
+                document.getElementById('createUserForm').reset();
+            } else {
+                document.getElementById('statusMessage').innerText = '❌ خطا در ثبت کاربر.';
+            }
+        }).catch(error => {
+            document.getElementById('statusMessage').innerText = '❌ ارتباط با سرور برقرار نشد.';
+            console.error('Error:', error);
+        });
+    });
+</script>
+</body>
+</html>

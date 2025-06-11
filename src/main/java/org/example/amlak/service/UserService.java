@@ -1,5 +1,7 @@
 package org.example.amlak.service;
 
+import org.example.amlak.dto.CreateUserRequest;
+import org.example.amlak.dto.UserResponse;
 import org.example.amlak.model.Permission;
 import org.example.amlak.model.Role;
 import org.example.amlak.model.User;
@@ -10,7 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -45,5 +48,29 @@ public class UserService {
 
             System.out.println("✅ ادمین ساخته شد: admin / admin123");
         }
+    }
+
+    public void createUser(CreateUserRequest request) {
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setEnabled(true);
+
+        Set<Role> roles = new HashSet<>(roleRepository.findByNameIn(request.getRoles()));
+        user.setRoles(roles);
+
+        userRepository.save(user);
+    }
+
+    public List<UserResponse> getAllUsers() {
+        return userRepository.findAll().stream().map(user -> {
+            List<String> roleNames = user.getRoles().stream()
+                    .map(Role::getName).collect(Collectors.toList());
+            return new UserResponse(user.getId(), user.getUsername(), roleNames);
+        }).collect(Collectors.toList());
+    }
+
+    public void deleteUser(Long id) {
+        userRepository.deleteById(id);
     }
 }
