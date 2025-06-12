@@ -2,25 +2,30 @@
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>مدیریت نقش‌های کاربران و منوهای قابل دسترسی</title>
+    <title>مدیریت نقش‌های کاربران و دسترسی منوها</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
         h2, h3 { color: #0056b3; }
         label { display: block; margin-bottom: 5px; font-weight: bold; }
         select, button { padding: 10px 15px; margin-bottom: 15px; border-radius: 5px; border: 1px solid #ddd; font-size: 1rem; cursor: pointer; }
         button { background-color: #007bff; color: white; border: none; }
+        button.remove-role-btn { background-color: #dc3545; margin-right: 5px; }
         button:hover { background-color: #0056b3; }
+        button.remove-role-btn:hover { background-color: #c82333; }
         ul { list-style-type: none; padding: 0; }
-        li { background-color: #e9e9e9; margin-bottom: 8px; padding: 10px; border-radius: 5px; }
+        li { background-color: #e9e9e9; margin-bottom: 8px; padding: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
         #userRoles, #userAccessibleMenus { border: 1px solid #ccc; padding: 10px; min-height: 50px; background-color: white; border-radius: 5px; }
         #message-manage { margin-top: 15px; padding: 10px; border-radius: 5px; font-weight: bold; }
         .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .menu-item-status { font-weight: bold; margin-right: 10px; }
+        .has-access { color: green; }
+        .no-access { color: red; }
     </style>
 </head>
 <body>
 
-<h2>مدیریت نقش‌های کاربران و مشاهده منوها</h2>
+<h2>مدیریت نقش‌های کاربران و دسترسی منوها</h2>
 
 <label for="userSelect">انتخاب کاربر:</label>
 <select id="userSelect" onchange="loadUserRolesAndMenus()">
@@ -29,11 +34,11 @@
 <h3>نقش‌های این کاربر</h3>
 <ul id="userRoles"></ul>
 
-<h3>منوهای قابل دسترسی این کاربر (بر اساس نقش‌ها)</h3>
-<ul id="userAccessibleMenus"></ul>
+<hr> <h3>لیست تمام منوها و وضعیت دسترسی این کاربر</h3>
+<ul id="allMenusWithAccessStatus"></ul>
 
-<h3>اختصاص نقش به کاربر</h3>
-<label for="roleSelect">انتخاب نقش:</label>
+<hr> <h3>اختصاص نقش جدید به کاربر</h3>
+<label for="roleSelect">انتخاب نقش برای افزودن:</label>
 <select id="roleSelect">
 </select><br><br>
 
@@ -46,6 +51,7 @@
 
 <script>
     let allRoles = [];
+    let allMenus = []; // برای ذخیره تمام منوها
 
     function showMessageManage(msg, type) {
         const messageElement = document.getElementById('message-manage');
@@ -74,7 +80,8 @@
                     select.appendChild(option);
                 });
                 if (data.length > 0) {
-                    loadRoles(); // بارگذاری نقش‌ها پس از بارگذاری کاربران
+                    loadRoles();
+                    loadAllMenus(); // بارگذاری تمام منوها
                 }
             })
             .catch(error => {
@@ -84,11 +91,9 @@
     }
 
     function loadRoles() {
-        // این فراخوانی منجر به خطای 404 می‌شود:
         fetch('/api/roles')
             .then(res => {
                 if (!res.ok) {
-                    // در صورت خطای 404 یا 403، پیام دقیق‌تری نمایش داده شود.
                     throw new Error(`HTTP error! status: ${res.status} - ${res.status === 404 ? 'اندپوینت یافت نشد یا دسترسی رد شد.' : 'خطای سرور.'}`);
                 }
                 return res.json();
@@ -110,15 +115,35 @@
             });
     }
 
+    // تابع جدید: بارگذاری تمام منوها (برای نمایش وضعیت دسترسی)
+    function loadAllMenus() {
+        fetch('/api/menus') // این اندپوینت تمام منوها را برمی‌گرداند (فقط برای ادمین)
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+            })
+            .then(data => {
+                allMenus = data;
+                // نیازی به رندر کردن فوری نیست، در loadUserRolesAndMenus استفاده می‌شود.
+            })
+            .catch(error => {
+                showMessageManage('❌ خطا در بارگذاری تمام منوها: ' + error.message, 'error');
+                console.error('Error loading all menus:', error);
+            });
+    }
+
     function loadUserRolesAndMenus() {
         const userId = document.getElementById('userSelect').value;
         if (!userId) {
             document.getElementById('userRoles').innerHTML = '<li>کاربری انتخاب نشده است.</li>';
-            document.getElementById('userAccessibleMenus').innerHTML = '<li>کاربری انتخاب نشده است.</li>';
+            document.getElementById('allMenusWithAccessStatus').innerHTML = '<li>کاربری انتخاب نشده است.</li>';
             showMessageManage('', '');
             return;
         }
 
+        // 1. بارگذاری نقش‌های کاربر
         fetch(`/api/users/${userId}/roles`)
             .then(res => {
                 if (!res.ok) {
@@ -134,7 +159,10 @@
                 } else {
                     data.forEach(roleName => {
                         const li = document.createElement('li');
-                        li.innerText = roleName;
+                        li.innerHTML = `
+                            <span>${roleName}</span>
+                            <button class="remove-role-btn" onclick="removeRoleFromUser(${userId}, '${roleName}')">حذف نقش</button>
+                        `;
                         ul.appendChild(li);
                     });
                 }
@@ -144,6 +172,9 @@
                 console.error('Error loading user roles:', error);
             });
 
+        // 2. بارگذاری منوهای قابل دسترسی این کاربر و نمایش وضعیت دسترسی (نیاز به اندپوینت جدید در MenuService)
+        // این بخش از اندپوینت /api/menus/for-user/{userId} استفاده می‌کند.
+        // این اندپوینت منوهایی را برمی‌گرداند که کاربر به آن‌ها دسترسی دارد.
         fetch(`/api/menus/for-user/${userId}`)
             .then(res => {
                 if (!res.ok) {
@@ -151,18 +182,31 @@
                 }
                 return res.json();
             })
-            .then(data => {
-                const ul = document.getElementById('userAccessibleMenus');
+            .then(accessibleMenusData => {
+                const ul = document.getElementById('allMenusWithAccessStatus');
                 ul.innerHTML = '';
-                if (data.length === 0) {
-                    ul.innerHTML = '<li>این کاربر به هیچ منویی دسترسی ندارد.</li>';
-                } else {
-                    data.forEach(menu => {
-                        const li = document.createElement('li');
-                        li.innerText = `${menu.title} (${menu.url})`;
-                        ul.appendChild(li);
-                    });
+
+                if (allMenus.length === 0) {
+                    ul.innerHTML = '<li>منویی در سیستم ثبت نشده است.</li>';
+                    return;
                 }
+
+                // ایجاد Set از نام مجوزهای منوهای قابل دسترسی برای جستجوی سریع
+                const accessibleMenuTitles = new Set(accessibleMenusData.map(menu => menu.title));
+
+                allMenus.forEach(menu => {
+                    const li = document.createElement('li');
+                    const hasAccess = accessibleMenuTitles.has(menu.title);
+                    const statusClass = hasAccess ? 'has-access' : 'no-access';
+                    const statusText = hasAccess ? '✅ دارد' : '❌ ندارد';
+
+                    li.innerHTML = `
+                        <span>${menu.title} (${menu.url})</span>
+                        <span class="${statusClass} menu-item-status">دسترسی: ${statusText}</span>
+                        `;
+                    ul.appendChild(li);
+                });
+
             })
             .catch(error => {
                 showMessageManage('❌ خطا در بارگذاری منوهای قابل دسترسی کاربر: ' + error.message, 'error');
@@ -195,12 +239,36 @@
             })
             .then(message => {
                 showMessageManage(message, 'success');
-                loadUserRolesAndMenus();
+                loadUserRolesAndMenus(); // بارگذاری مجدد اطلاعات کاربر
             })
             .catch(error => {
                 showMessageManage('❌ خطا در اختصاص نقش: ' + error.message, 'error');
                 console.error('Error assigning role:', error);
             });
+    }
+
+    function removeRoleFromUser(userId, roleName) {
+        if (confirm(`آیا مطمئن هستید که می‌خواهید نقش "${roleName}" را از کاربر حذف کنید؟`)) {
+            fetch(`/api/users/${userId}/roles/${roleName}`, {
+                method: 'DELETE'
+            })
+                .then(res => {
+                    if (!res.ok) {
+                        return res.text().then(text => {
+                            throw new Error(text || `HTTP error! status: ${res.status}`);
+                        });
+                    }
+                    return res.text();
+                })
+                .then(message => {
+                    showMessageManage(message, 'success');
+                    loadUserRolesAndMenus(); // بارگذاری مجدد اطلاعات کاربر
+                })
+                .catch(error => {
+                    showMessageManage('❌ خطا در حذف نقش: ' + error.message, 'error');
+                    console.error('Error removing role:', error);
+                });
+        }
     }
 
     window.onload = loadUsers;

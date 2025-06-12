@@ -3,15 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <title>ورود به سیستم</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Vazirmatn', sans-serif; /* استفاده از فونت فارسی زیبا */
+            direction: rtl;
+            background: linear-gradient(135deg, #71b7e6, #9b59b6); /* گرادیان پس‌زمینه جذاب */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #333;
+        }
+
+        .login-container {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); /* سایه جذاب */
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            animation: fadeIn 1s ease-in-out; /* انیمیشن ورود */
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2em;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 50%;
+            transform: translateX(50%);
+            width: 60px;
+            height: 3px;
+            background-color: #71b7e6;
+            border-radius: 5px;
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+            text-align: right; /* متن برچسب از راست */
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+            font-size: 0.95em;
+        }
+
+        .input-group input {
+            width: calc(100% - 20px); /* برای padding */
+            padding: 12px 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            box-sizing: border-box; /* padding در داخل width محاسبه شود */
+        }
+
+        .input-group input:focus {
+            border-color: #71b7e6;
+            box-shadow: 0 0 8px rgba(113, 183, 230, 0.4);
+            outline: none; /* حذف outline پیش‌فرض مرورگر */
+        }
+
+        button {
+            background-color: #9b59b6; /* رنگ دکمه جذاب */
+            color: white;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(155, 89, 182, 0.4);
+        }
+
+        button:hover {
+            background-color: #8e44ad; /* رنگ تیره‌تر هنگام هاور */
+            transform: translateY(-3px); /* حرکت دکمه به بالا هنگام هاور */
+        }
+
+        .error-message {
+            color: #e74c3c;
+            margin-top: 15px;
+            font-size: 0.9em;
+        }
+    </style>
 </head>
 <body>
-<h2>فرم ورود</h2>
-<form method="post" action="/login">
-    <label>نام کاربری:</label>
-    <input type="text" name="username" required><br>
-    <label>رمز عبور:</label>
-    <input type="password" name="password" required><br>
-    <button type="submit">ورود</button>
-</form>
+
+<div class="login-container">
+    <h2>ورود به سیستم</h2>
+    <form method="post" action="/login"> <div class="input-group">
+        <label for="username">نام کاربری:</label>
+        <input type="text" id="username" name="username" required autocomplete="username">
+    </div>
+        <div class="input-group">
+            <label for="password">رمز عبور:</label>
+            <input type="password" id="password" name="password" required autocomplete="current-password">
+        </div>
+        <div class="error-message" id="loginErrorMessage">
+        </div>
+        <button type="submit">ورود</button>
+    </form>
+</div>
+
+<script>
+    // جاوا اسکریپت برای نمایش پیام خطا از URL
+    window.onload = function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const errorParam = urlParams.get('error');
+        const logoutParam = urlParams.get('logout');
+        const errorMessageDiv = document.getElementById('loginErrorMessage');
+
+        if (errorParam) {
+            errorMessageDiv.innerText = 'نام کاربری یا رمز عبور اشتباه است.';
+        } else if (logoutParam) {
+            errorMessageDiv.innerText = 'شما با موفقیت خارج شدید.';
+            errorMessageDiv.style.color = '#28a745'; // رنگ سبز برای پیام موفقیت
+        }
+    };
+</script>
+
 </body>
 </html>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>ایجاد نقش جدید</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        h2 { color: #0056b3; }
+        form div { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"] { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        .permission-list { border: 1px solid #ddd; padding: 10px; border-radius: 5px; background-color: white; max-height: 200px; overflow-y: auto; }
+        .permission-list label { display: flex; align-items: center; margin-bottom: 8px; font-weight: normal; }
+        .permission-list input[type="checkbox"] { margin-left: 8px; }
+        button { padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1rem; }
+        button:hover { background-color: #218838; }
+        #message-create-role { margin-top: 15px; padding: 10px; border-radius: 5px; font-weight: bold; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        a { display: inline-block; margin-top: 20px; padding: 10px 15px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; }
+        a:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+<h2>ایجاد نقش جدید</h2>
+
+<form id="createRoleForm">
+    <div>
+        <label for="roleName">نام نقش (مثال: ROLE_MANAGER):</label>
+        <input type="text" id="roleName" name="roleName" required>
+    </div>
+    <div>
+        <label>مجوزها:</label>
+        <div id="permissionList" class="permission-list">
+        </div>
+    </div>
+    <button type="submit">ایجاد نقش</button>
+</form>
+
+<p id="message-create-role"></p>
+
+<br>
+<a href="user-list.html">⬅️ بازگشت به لیست کاربران</a>
+<script>
+    function showMessageCreateRole(msg, type) {
+        const messageElement = document.getElementById('message-create-role');
+        messageElement.innerText = msg;
+        messageElement.className = '';
+        if (type) {
+            messageElement.classList.add(type);
+        }
+    }
+
+    function loadPermissions() {
+        // اندپوینت برای دریافت تمام مجوزها (نیاز به PermissionController)
+        fetch('/api/permissions') // <<-- این اندپوینت را در بک‌اند اضافه کنید
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+            })
+            .then(data => {
+                const permissionListDiv = document.getElementById('permissionList');
+                permissionListDiv.innerHTML = ''; // پاک کردن قبل از بارگذاری مجدد
+                data.forEach(permission => {
+                    const label = document.createElement('label');
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.name = 'permissions';
+                    checkbox.value = permission.name;
+                    label.appendChild(checkbox);
+                    label.appendChild(document.createTextNode(permission.name));
+                    permissionListDiv.appendChild(label);
+                });
+            })
+            .catch(error => {
+                showMessageCreateRole('❌ خطا در بارگذاری مجوزها: ' + error.message, 'error');
+                console.error('Error loading permissions:', error);
+            });
+    }
+
+    document.getElementById('createRoleForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const roleName = document.getElementById('roleName').value;
+        const selectedPermissions = Array.from(document.querySelectorAll('input[name="permissions"]:checked'))
+            .map(checkbox => checkbox.value);
+
+        fetch('/api/roles', { // ارسال به اندپوینت POST /api/roles
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                name: roleName,
+                permissionNames: selectedPermissions
+            })
+        })
+            .then(response => {
+                if (response.ok) {
+                    response.text().then(message => { // پیام موفقیت از بک‌اند را بخوانید
+                        showMessageCreateRole(message, 'success');
+                        document.getElementById('createRoleForm').reset(); // ریست کردن فرم
+                        // اگر می‌خواهید چک‌باکس‌ها هم ریست شوند، می‌توانید loadPermissions() را دوباره فراخوانی کنید
+                    });
+                } else {
+                    response.text().then(errorMessage => {
+                        showMessageCreateRole('❌ خطا در ایجاد نقش: ' + errorMessage, 'error');
+                    }).catch(err => {
+                        showMessageCreateRole('❌ خطا در ایجاد نقش (پیام نامشخص)', 'error');
+                        console.error('Error parsing error message:', err);
+                    });
+                }
+            })
+            .catch(error => {
+                showMessageCreateRole('❌ خطای شبکه در ایجاد نقش: ' + error.message, 'error');
+                console.error('Network error:', error);
+            });
+    });
+
+    window.onload = loadPermissions; // بارگذاری مجوزها هنگام لود شدن صفحه
+</script>
+</body>
+</html>
