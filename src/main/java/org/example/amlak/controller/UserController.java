@@ -129,17 +129,16 @@ public class UserController {
         }
     }
 
-    // اگر نیاز به حذف یک نقش از کاربر دارید، می‌توانید متد زیر را اضافه کنید:
-    // @DeleteMapping("/{userId}/roles/{roleName}")
-    // @PreAuthorize("hasRole('ADMIN')")
-    // public ResponseEntity<?> removeRoleFromUser(@PathVariable Long userId, @PathVariable String roleName) {
-    //     try {
-    //         userService.removeRoleFromUser(userId, roleName); // نیاز به پیاده‌سازی این متد در UserService
-    //         return ResponseEntity.ok().body("نقش با موفقیت از کاربر حذف شد.");
-    //     } catch (NoSuchElementException e) {
-    //         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-    //     } catch (IllegalArgumentException e) {
-    //         return ResponseEntity.badRequest().body(e.getMessage());
-    //     }
-    // }
+     @DeleteMapping("/{userId}/roles/{roleName}")
+     @PreAuthorize("hasRole('ADMIN')")
+     public ResponseEntity<?> removeRoleFromUser(@PathVariable Long userId, @PathVariable String roleName) {
+         try {
+             userService.removeRoleFromUser(userId, roleName); // نیاز به پیاده‌سازی این متد در UserService
+             return ResponseEntity.ok().body("نقش با موفقیت از کاربر حذف شد.");
+         } catch (NoSuchElementException e) {
+             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+         } catch (IllegalArgumentException e) {
+             return ResponseEntity.badRequest().body(e.getMessage());
+         }
+     }
 }

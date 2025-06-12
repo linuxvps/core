@@ -148,29 +148,29 @@ public class UserService {
     }
 
     // Optional: Method to remove a role from a user, if needed
-    // public void removeRoleFromUser(Long userId, String roleName) {
-    //     User user = userRepository.findById(userId)
-    //             .orElseThrow(() -> new NoSuchElementException("User with ID " + userId + " not found."));
-    //     Role roleToRemove = roleRepository.findByName(roleName)
-    //             .orElseThrow(() -> new NoSuchElementException("Role with name " + roleName + " not found."));
+     public void removeRoleFromUser(Long userId, String roleName) {
+         User user = userRepository.findById(userId)
+                 .orElseThrow(() -> new NoSuchElementException("User with ID " + userId + " not found."));
+         Role roleToRemove = roleRepository.findByName(roleName)
+                 .orElseThrow(() -> new NoSuchElementException("Role with name " + roleName + " not found."));
 
-    //     if (!user.getRoles().contains(roleToRemove)) {
-    //         throw new IllegalArgumentException("Role '" + roleName + "' is not assigned to user '" + user.getUsername() + "'.");
-    //     }
-    //     user.getRoles().remove(roleToRemove);
-    //     userRepository.save(user);
-    // }
+         if (!user.getRoles().contains(roleToRemove)) {
+             throw new IllegalArgumentException("Role '" + roleName + "' is not assigned to user '" + user.getUsername() + "'.");
+         }
+         user.getRoles().remove(roleToRemove);
+         userRepository.save(user);
+     }
 
     // Optional: Method to update (replace) all roles for a user, if needed
-    // public void updateUserRoles(Long userId, List<String> newRoleNames) {
-    //     User user = userRepository.findById(userId)
-    //             .orElseThrow(() -> new NoSuchElementException("User with ID " + userId + " not found."));
+     public void updateUserRoles(Long userId, List<String> newRoleNames) {
+         User user = userRepository.findById(userId)
+                 .orElseThrow(() -> new NoSuchElementException("User with ID " + userId + " not found."));
 
-    //     Set<Role> rolesToSet = newRoleNames.stream()
-    //             .map(roleName -> roleRepository.findByName(roleName)
-    //                     .orElseThrow(() -> new IllegalArgumentException("Role with name " + roleName + " not found.")))
-    //             .collect(Collectors.toSet());
-    //     user.setRoles(rolesToSet);
-    //     userRepository.save(user);
-    // }
+         Set<Role> rolesToSet = newRoleNames.stream()
+                 .map(roleName -> roleRepository.findByName(roleName)
+                         .orElseThrow(() -> new IllegalArgumentException("Role with name " + roleName + " not found.")))
+                 .collect(Collectors.toSet());
+         user.setRoles(rolesToSet);
+         userRepository.save(user);
+     }
 }
