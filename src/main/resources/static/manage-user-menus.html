@@ -8,27 +8,28 @@
 
 <h2>مدیریت منوهای کاربران</h2>
 
+<!-- انتخاب یوزر -->
 <label>کاربر:</label>
 <select id="userSelect" onchange="loadUserMenus()">
-    <!-- با JS پر میشه -->
+    <!-- یوزرها با JS پر میشه -->
 </select>
 
 <h3>منوهای این کاربر</h3>
 <ul id="userMenus"></ul>
 
 <h3>افزودن منو به کاربر</h3>
-<label>نام منو:</label>
-<input type="text" id="menuTitle"><br>
 
-<label>URL منو:</label>
-<input type="text" id="menuUrl"><br>
-
-<label>پرمیشن منو:</label>
-<input type="text" id="menuPermission"><br>
+<!-- انتخاب منو از لیست موجود -->
+<label>منو:</label>
+<select id="menuSelect">
+    <!-- منوها با JS پر میشه -->
+</select><br><br>
 
 <button onclick="addMenuToUser()">ثبت</button>
 
 <script>
+    let allMenus = [];
+
     function loadUsers() {
         fetch('/admin/users')
             .then(res => res.json())
@@ -41,9 +42,29 @@
                     option.innerText = user.username;
                     select.appendChild(option);
                 });
-                if (data.length > 0) loadUserMenus(); // فقط اگه کاربر داریم
+                if (data.length > 0) {
+                    loadMenus();
+                    loadUserMenus();
+                }
             });
     }
+
+    function loadMenus() {
+        fetch('/api/menus')
+            .then(res => res.json())
+            .then(data => {
+                allMenus = data;
+                const select = document.getElementById('menuSelect');
+                select.innerHTML = '';
+                data.forEach(menu => {
+                    const option = document.createElement('option');
+                    option.value = menu.id;
+                    option.innerText = menu.title; // فقط نام منو
+                    select.appendChild(option);
+                });
+            });
+    }
+
 
     function loadUserMenus() {
         const userId = document.getElementById('userSelect').value;
@@ -62,15 +83,19 @@
 
     function addMenuToUser() {
         const userId = document.getElementById('userSelect').value;
-        const menu = {
-            title: document.getElementById('menuTitle').value,
-            url: document.getElementById('menuUrl').value,
-            permission: document.getElementById('menuPermission').value
-        };
+        const selectedMenuId = document.getElementById('menuSelect').value;
+        const menu = allMenus.find(m => m.id == selectedMenuId);
+
+        if (!menu) return;
+
         fetch(`/api/user-menus/${userId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(menu)
+            body: JSON.stringify({
+                title: menu.title,
+                url: menu.url,
+                permission: menu.permission
+            })
         }).then(() => loadUserMenus());
     }
 
