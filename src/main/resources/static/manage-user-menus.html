@@ -2,40 +2,57 @@
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>مدیریت منوهای کاربران</title>
+    <title>مدیریت نقش‌های کاربران و منوهای قابل دسترسی</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        h2, h3 { color: #0056b3; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        select, button { padding: 10px 15px; margin-bottom: 15px; border-radius: 5px; border: 1px solid #ddd; font-size: 1rem; cursor: pointer; }
+        button { background-color: #007bff; color: white; border: none; }
+        button:hover { background-color: #0056b3; }
+        ul { list-style-type: none; padding: 0; }
+        li { background-color: #e9e9e9; margin-bottom: 8px; padding: 10px; border-radius: 5px; }
+        #userRoles, #userAccessibleMenus { border: 1px solid #ccc; padding: 10px; min-height: 50px; background-color: white; border-radius: 5px; }
+    </style>
 </head>
 <body>
 
-<h2>مدیریت منوهای کاربران</h2>
+<h2>مدیریت نقش‌های کاربران و مشاهده منوها</h2>
 
-<!-- انتخاب یوزر -->
-<label>کاربر:</label>
-<select id="userSelect" onchange="loadUserMenus()">
-    <!-- یوزرها با JS پر میشه -->
+<label for="userSelect">انتخاب کاربر:</label>
+<select id="userSelect" onchange="loadUserRolesAndMenus()">
 </select>
 
-<h3>منوهای این کاربر</h3>
-<ul id="userMenus"></ul>
+<h3>نقش‌های این کاربر</h3>
+<ul id="userRoles"></ul>
 
-<h3>افزودن منو به کاربر</h3>
+<h3>منوهای قابل دسترسی این کاربر (بر اساس نقش‌ها)</h3>
+<ul id="userAccessibleMenus"></ul>
 
-<!-- انتخاب منو از لیست موجود -->
-<label>منو:</label>
-<select id="menuSelect">
-    <!-- منوها با JS پر میشه -->
+<h3>اختصاص نقش به کاربر</h3>
+<label for="roleSelect">انتخاب نقش:</label>
+<select id="roleSelect">
 </select><br><br>
 
-<button onclick="addMenuToUser()">ثبت</button>
+<button onclick="assignRoleToUser()">اختصاص نقش</button>
 
 <script>
-    let allMenus = [];
+    let allRoles = []; // برای ذخیره تمام نقش‌ها
 
+    // 1. بارگذاری کاربران هنگام لود شدن صفحه
     function loadUsers() {
-        fetch('/admin/users')
-            .then(res => res.json())
+        // فرض می‌کنیم اندپوینت /api/users لیست کاربران را به همراه نقش‌هایشان برمی‌گرداند.
+        // اگر UserService.getAllUsers() فقط شامل id, username, و roleNames است، این کافیست.
+        fetch('/api/users')
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+            })
             .then(data => {
                 const select = document.getElementById('userSelect');
-                select.innerHTML = '';
+                select.innerHTML = '<option value="">-- یک کاربر انتخاب کنید --</option>'; // اضافه کردن گزینه پیش‌فرض
                 data.forEach(user => {
                     const option = document.createElement('option');
                     option.value = user.id;
@@ -43,62 +60,137 @@
                     select.appendChild(option);
                 });
                 if (data.length > 0) {
-                    loadMenus();
-                    loadUserMenus();
+                    // پس از بارگذاری کاربران، نقش‌ها را هم بارگذاری می‌کنیم.
+                    loadRoles();
+                    // اگر اولین کاربر را به صورت خودکار انتخاب کنیم و اطلاعاتش را لود کنیم
+                    // select.value = data[0].id;
+                    // loadUserRolesAndMenus();
                 }
-            });
+            })
+            .catch(error => console.error('Error loading users:', error));
     }
 
-    function loadMenus() {
-        fetch('/api/menus')
-            .then(res => res.json())
+    // 2. بارگذاری تمام نقش‌ها (برای سلکت باکس "انتخاب نقش")
+    function loadRoles() {
+        // فرض می‌کنیم اندپوینت /api/roles لیست تمام نقش‌ها را برمی‌گرداند.
+        fetch('/api/roles') // این اندپوینت را در RoleController خود اضافه کنید
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+            })
             .then(data => {
-                allMenus = data;
-                const select = document.getElementById('menuSelect');
+                allRoles = data; // ذخیره تمام نقش‌ها
+                const select = document.getElementById('roleSelect');
                 select.innerHTML = '';
-                data.forEach(menu => {
+                data.forEach(role => {
                     const option = document.createElement('option');
-                    option.value = menu.id;
-                    option.innerText = menu.title; // فقط نام منو
+                    option.value = role.name; // نام نقش را به عنوان value قرار می‌دهیم
+                    option.innerText = role.name;
                     select.appendChild(option);
                 });
-            });
-    }
-
-
-    function loadUserMenus() {
-        const userId = document.getElementById('userSelect').value;
-        fetch(`/api/user-menus/${userId}`)
-            .then(res => res.json())
-            .then(data => {
-                const ul = document.getElementById('userMenus');
-                ul.innerHTML = '';
-                data.forEach(menu => {
-                    const li = document.createElement('li');
-                    li.innerText = `${menu.title} (${menu.url})`;
-                    ul.appendChild(li);
-                });
-            });
-    }
-
-    function addMenuToUser() {
-        const userId = document.getElementById('userSelect').value;
-        const selectedMenuId = document.getElementById('menuSelect').value;
-        const menu = allMenus.find(m => m.id == selectedMenuId);
-
-        if (!menu) return;
-
-        fetch(`/api/user-menus/${userId}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                title: menu.title,
-                url: menu.url,
-                permission: menu.permission
             })
-        }).then(() => loadUserMenus());
+            .catch(error => console.error('Error loading roles:', error));
     }
 
+    // 3. بارگذاری نقش‌های کاربر انتخاب شده و منوهای قابل دسترسی او
+    function loadUserRolesAndMenus() {
+        const userId = document.getElementById('userSelect').value;
+        if (!userId) {
+            document.getElementById('userRoles').innerHTML = '<li>کاربری انتخاب نشده است.</li>';
+            document.getElementById('userAccessibleMenus').innerHTML = '<li>کاربری انتخاب نشده است.</li>';
+            return;
+        }
+
+        // بارگذاری نقش‌های کاربر
+        fetch(`/api/users/${userId}/roles`) // این اندپوینت را در UserController خود اضافه کنید
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+            })
+            .then(data => {
+                const ul = document.getElementById('userRoles');
+                ul.innerHTML = '';
+                if (data.length === 0) {
+                    ul.innerHTML = '<li>این کاربر نقشی ندارد.</li>';
+                } else {
+                    data.forEach(roleName => {
+                        const li = document.createElement('li');
+                        li.innerText = roleName;
+                        ul.appendChild(li);
+                    });
+                }
+            })
+            .catch(error => console.error('Error loading user roles:', error));
+
+        // بارگذاری منوهای قابل دسترسی کاربر (از اندپوینت /api/menus/my - این نیاز به احراز هویت کاربر جاری دارد)
+        // این بخش پیچیده‌تر است، زیرا اندپوینت /api/menus/my منوهای کاربر لاگین شده را برمی‌گرداند، نه کاربری که انتخاب شده است.
+        // اگر می‌خواهید منوهای قابل دسترسی برای *کاربر انتخاب شده در لیست* را ببینید، باید
+        // یا یک اندپوینت جدید در بک‌اند برای ادمین ایجاد کنید (مثلاً /api/menus/for-user/{userId})
+        // یا منطق را در اینجا تغییر دهید.
+        // برای سادگی، فعلاً فرض می‌کنیم می‌خواهیم منوهای کاربر لاگین شده را ببینیم.
+        // اما منطقی‌تر است که ادمین بتواند منوهای هر کاربری را مشاهده کند.
+
+        // برای نمایش منوهای قابل دسترسی کاربر انتخاب شده (نیاز به اندپوینت جدید در بک‌اند)
+        fetch(`/api/menus/for-user/${userId}`) // <<-- این اندپوینت را در MenuController اضافه کنید (مثلاً @PreAuthorize("hasRole('ADMIN')"))
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+            })
+            .then(data => {
+                const ul = document.getElementById('userAccessibleMenus');
+                ul.innerHTML = '';
+                if (data.length === 0) {
+                    ul.innerHTML = '<li>این کاربر به هیچ منویی دسترسی ندارد.</li>';
+                } else {
+                    data.forEach(menu => {
+                        const li = document.createElement('li');
+                        li.innerText = `${menu.title} (${menu.url})`;
+                        ul.appendChild(li);
+                    });
+                }
+            })
+            .catch(error => console.error('Error loading user accessible menus:', error));
+    }
+
+
+    // 4. اختصاص نقش به کاربر
+    function assignRoleToUser() {
+        const userId = document.getElementById('userSelect').value;
+        const roleName = document.getElementById('roleSelect').value;
+
+        if (!userId || !roleName) {
+            alert('لطفاً هم کاربر و هم نقش را انتخاب کنید.');
+            return;
+        }
+
+        // اندپوینت برای اختصاص/به‌روزرسانی نقش‌های کاربر (نیاز به متد در UserController)
+        fetch(`/api/users/${userId}/roles`, {
+            method: 'PUT', // یا POST اگر فقط اضافه می‌کنید
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ roleName: roleName }) // ارسال نام نقش به بک‌اند
+        })
+            .then(res => {
+                if (!res.ok) {
+                    if (res.status === 404) throw new Error('کاربر یا نقش یافت نشد.');
+                    if (res.status === 400) return res.json().then(err => { throw new Error(err.message || 'درخواست نامعتبر'); });
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json(); // اگر بک‌اند چیزی برمی‌گرداند
+            })
+            .then(data => {
+                alert('نقش با موفقیت اختصاص یافت.');
+                loadUserRolesAndMenus(); // بارگذاری مجدد اطلاعات کاربر
+            })
+            .catch(error => alert('خطا در اختصاص نقش: ' + error.message));
+    }
+
+    // هنگام لود شدن صفحه، ابتدا کاربران را بارگذاری کنید.
     window.onload = loadUsers;
 </script>
 

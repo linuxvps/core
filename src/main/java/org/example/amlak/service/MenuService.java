@@ -1,79 +1,115 @@
+// 📁 org/example/amlak/service/MenuService.java
 package org.example.amlak.service;
 
+import org.example.amlak.dto.MenuCreateRequest; // DTO جدید را ایمپورت کنید
 import org.example.amlak.model.Menu;
+import org.example.amlak.model.Permission;
 import org.example.amlak.repository.MenuRepository;
+import org.example.amlak.repository.PermissionRepository; // باید PermissionRepository را Autowire کنید
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
+import org.example.amlak.model.User; // برای استفاده از User
+import org.example.amlak.repository.UserRepository; // برای Autowire کردن UserRepository
+import java.util.NoSuchElementException; // برای مدیریت خطای کاربر یافت نشد
 
 @Service
 public class MenuService {
 
     @Autowired
     private MenuRepository menuRepository;
+    @Autowired // اضافه کردن PermissionRepository
+    private PermissionRepository permissionRepository;
+    @Autowired
+    private UserRepository userRepository; // اضافه کردن UserRepository
 
-    // نمایش منوهای مجاز کاربر فعلی
-    // این متد باید لیست پرمیشن‌های کاربر را به شکل String (نام پرمیشن) دریافت کند
-    // و منوهایی را برگرداند که requiredPermission آن‌ها در لیست پرمیشن‌های کاربر موجود باشد.
+
+
     public List<Menu> getMenusForUser(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             return Collections.emptyList();
         }
 
-        // استخراج نام تمام پرمیشن‌هایی که کاربر از طریق نقش‌هایش دارد
         Set<String> userPermissionNames = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toSet()); // استفاده از Set برای جلوگیری از تکرار و بهبود عملکرد جستجو
+                .collect(Collectors.toSet());
 
-        // دریافت تمام منوها
         List<Menu> allMenus = menuRepository.findAll();
 
-        // فیلتر کردن منوها بر اساس پرمیشن‌های کاربر
         List<Menu> accessibleMenus = allMenus.stream()
                 .filter(menu -> {
-                    // اگر منو نیازی به مجوز خاصی ندارد (requiredPermission == null)، همیشه قابل مشاهده است
                     if (menu.getRequiredPermission() == null) {
                         return true;
                     }
-                    // اگر منو به مجوزی نیاز دارد، بررسی می‌کنیم که کاربر آن مجوز را دارد یا خیر
                     return userPermissionNames.contains(menu.getRequiredPermission().getName());
                 })
-                .sorted(Comparator.comparing(Menu::getOrderIndex, Comparator.nullsLast(Integer::compareTo))) // مرتب‌سازی بر اساس orderIndex، null ها در انتها
+                .sorted(Comparator.comparing(Menu::getOrderIndex, Comparator.nullsLast(Integer::compareTo)))
                 .collect(Collectors.toList());
 
         return accessibleMenus;
     }
 
-    // ذخیره منو جدید
-    // این متد باید اطمینان حاصل کند که یک منو با یک requiredPermission تکراری ذخیره نشود
-    // یا می‌توانید این بررسی را حذف کنید اگر یک Permission می‌تواند به چندین منو منجر شود (که منطقی‌تر است)
-    // تغییر یافت تا با شیء Permission کار کند
-    public Menu saveMenu(Menu menu) {
-        // اگر نیازی به منحصر به فرد بودن بر اساس requiredPermission نیست، این خط را حذف کنید.
-        // Optional<Menu> existing = menuRepository.findByRequiredPermission(menu.getRequiredPermission());
-        // if (existing.isPresent() && !existing.get().getId().equals(menu.getId())) {
-        //     throw new IllegalArgumentException("این سطح دسترسی قبلاً برای یک منو ثبت شده است.");
-        // }
-        // معمولا یک permission میتونه به چندین منو مرتبط باشه. (مثال: هر دو منوی 'User List' و 'Add User' نیاز به PERM_USER_MANAGEMENT دارند)
-        // پس خطوط بالا رو میتونید حذف کنید یا منطقشون رو تغییر بدید.
+    // متد saveMenu اصلاح شده برای دریافت DTO
+    public Menu saveMenu(MenuCreateRequest request) {
+        Menu menu = new Menu();
+        menu.setTitle(request.getTitle());
+        menu.setUrl(request.getUrl());
+        menu.setOrderIndex(request.getOrderIndex());
+
+        // اگر نام مجوزی ارسال شده باشد، آن را پیدا کرده و به منو اختصاص دهید
+        if (request.getRequiredPermissionName() != null && !request.getRequiredPermissionName().isEmpty()) {
+            Permission requiredPermission = permissionRepository.findByName(request.getRequiredPermissionName())
+                    .orElseThrow(() -> new IllegalArgumentException("مجوز با نام " + request.getRequiredPermissionName() + " یافت نشد."));
+            menu.setRequiredPermission(requiredPermission);
+        } else {
+            // اگر مجوزی نیاز نیست (مثلاً برای منوهای عمومی)
+            menu.setRequiredPermission(null);
+        }
 
         return menuRepository.save(menu);
     }
 
     // حذف منو
     public void deleteMenu(Long id) {
+        if (!menuRepository.existsById(id)) {
+            throw new NoSuchElementException("منویی با شناسه " + id + " یافت نشد.");
+        }
         menuRepository.deleteById(id);
     }
 
-    // نمایش همه منوها برای ادمین (یا کاربرانی با دسترسی خاص)
+    // نمایش همه منوها برای ادمین
     public List<Menu> getAllMenus() {
         return menuRepository.findAll();
+    }
+
+
+    public List<Menu> getMenusForSpecificUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("کاربری با شناسه " + userId + " یافت نشد."));
+
+        if (!user.isEnabled()) {
+            return Collections.emptyList(); // اگر کاربر غیرفعال است، هیچ منویی برنگردان
+        }
+
+        Set<String> userPermissionNames = user.getRoles().stream()
+                .flatMap(role -> role.getPermissions().stream())
+                .map(Permission::getName)
+                .collect(Collectors.toSet());
+
+        List<Menu> allMenus = menuRepository.findAll();
+
+        return allMenus.stream()
+                .filter(menu -> {
+                    if (menu.getRequiredPermission() == null) {
+                        return true;
+                    }
+                    return userPermissionNames.contains(menu.getRequiredPermission().getName());
+                })
+                .sorted(Comparator.comparing(Menu::getOrderIndex, Comparator.nullsLast(Integer::compareTo)))
+                .collect(Collectors.toList());
     }
 }
