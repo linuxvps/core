@@ -2,6 +2,7 @@ package org.example.amlak.model;
 
 import javax.persistence.*;
 
+
 @Entity
 public class Menu {
     @Id @GeneratedValue
