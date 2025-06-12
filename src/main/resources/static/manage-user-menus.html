@@ -13,6 +13,9 @@
         ul { list-style-type: none; padding: 0; }
         li { background-color: #e9e9e9; margin-bottom: 8px; padding: 10px; border-radius: 5px; }
         #userRoles, #userAccessibleMenus { border: 1px solid #ccc; padding: 10px; min-height: 50px; background-color: white; border-radius: 5px; }
+        #message-manage { margin-top: 15px; padding: 10px; border-radius: 5px; font-weight: bold; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
     </style>
 </head>
 <body>
@@ -36,13 +39,24 @@
 
 <button onclick="assignRoleToUser()">اختصاص نقش</button>
 
-<script>
-    let allRoles = []; // برای ذخیره تمام نقش‌ها
+<p id="message-manage"></p>
 
-    // 1. بارگذاری کاربران هنگام لود شدن صفحه
+<br>
+<a href="user-list.html">⬅️ بازگشت به لیست کاربران</a>
+
+<script>
+    let allRoles = [];
+
+    function showMessageManage(msg, type) {
+        const messageElement = document.getElementById('message-manage');
+        messageElement.innerText = msg;
+        messageElement.className = '';
+        if (type) {
+            messageElement.classList.add(type);
+        }
+    }
+
     function loadUsers() {
-        // فرض می‌کنیم اندپوینت /api/users لیست کاربران را به همراه نقش‌هایشان برمی‌گرداند.
-        // اگر UserService.getAllUsers() فقط شامل id, username, و roleNames است، این کافیست.
         fetch('/api/users')
             .then(res => {
                 if (!res.ok) {
@@ -52,7 +66,7 @@
             })
             .then(data => {
                 const select = document.getElementById('userSelect');
-                select.innerHTML = '<option value="">-- یک کاربر انتخاب کنید --</option>'; // اضافه کردن گزینه پیش‌فرض
+                select.innerHTML = '<option value="">-- یک کاربر انتخاب کنید --</option>';
                 data.forEach(user => {
                     const option = document.createElement('option');
                     option.value = user.id;
@@ -60,51 +74,52 @@
                     select.appendChild(option);
                 });
                 if (data.length > 0) {
-                    // پس از بارگذاری کاربران، نقش‌ها را هم بارگذاری می‌کنیم.
-                    loadRoles();
-                    // اگر اولین کاربر را به صورت خودکار انتخاب کنیم و اطلاعاتش را لود کنیم
-                    // select.value = data[0].id;
-                    // loadUserRolesAndMenus();
+                    loadRoles(); // بارگذاری نقش‌ها پس از بارگذاری کاربران
                 }
             })
-            .catch(error => console.error('Error loading users:', error));
+            .catch(error => {
+                showMessageManage('❌ خطا در بارگذاری کاربران: ' + error.message, 'error');
+                console.error('Error loading users:', error);
+            });
     }
 
-    // 2. بارگذاری تمام نقش‌ها (برای سلکت باکس "انتخاب نقش")
     function loadRoles() {
-        // فرض می‌کنیم اندپوینت /api/roles لیست تمام نقش‌ها را برمی‌گرداند.
-        fetch('/api/roles') // این اندپوینت را در RoleController خود اضافه کنید
+        // این فراخوانی منجر به خطای 404 می‌شود:
+        fetch('/api/roles')
             .then(res => {
                 if (!res.ok) {
-                    throw new Error(`HTTP error! status: ${res.status}`);
+                    // در صورت خطای 404 یا 403، پیام دقیق‌تری نمایش داده شود.
+                    throw new Error(`HTTP error! status: ${res.status} - ${res.status === 404 ? 'اندپوینت یافت نشد یا دسترسی رد شد.' : 'خطای سرور.'}`);
                 }
                 return res.json();
             })
             .then(data => {
-                allRoles = data; // ذخیره تمام نقش‌ها
+                allRoles = data;
                 const select = document.getElementById('roleSelect');
                 select.innerHTML = '';
                 data.forEach(role => {
                     const option = document.createElement('option');
-                    option.value = role.name; // نام نقش را به عنوان value قرار می‌دهیم
+                    option.value = role.name;
                     option.innerText = role.name;
                     select.appendChild(option);
                 });
             })
-            .catch(error => console.error('Error loading roles:', error));
+            .catch(error => {
+                showMessageManage('❌ خطا در بارگذاری نقش‌ها: ' + error.message, 'error');
+                console.error('Error loading roles:', error);
+            });
     }
 
-    // 3. بارگذاری نقش‌های کاربر انتخاب شده و منوهای قابل دسترسی او
     function loadUserRolesAndMenus() {
         const userId = document.getElementById('userSelect').value;
         if (!userId) {
             document.getElementById('userRoles').innerHTML = '<li>کاربری انتخاب نشده است.</li>';
             document.getElementById('userAccessibleMenus').innerHTML = '<li>کاربری انتخاب نشده است.</li>';
+            showMessageManage('', '');
             return;
         }
 
-        // بارگذاری نقش‌های کاربر
-        fetch(`/api/users/${userId}/roles`) // این اندپوینت را در UserController خود اضافه کنید
+        fetch(`/api/users/${userId}/roles`)
             .then(res => {
                 if (!res.ok) {
                     throw new Error(`HTTP error! status: ${res.status}`);
@@ -124,18 +139,12 @@
                     });
                 }
             })
-            .catch(error => console.error('Error loading user roles:', error));
+            .catch(error => {
+                showMessageManage('❌ خطا در بارگذاری نقش‌های کاربر: ' + error.message, 'error');
+                console.error('Error loading user roles:', error);
+            });
 
-        // بارگذاری منوهای قابل دسترسی کاربر (از اندپوینت /api/menus/my - این نیاز به احراز هویت کاربر جاری دارد)
-        // این بخش پیچیده‌تر است، زیرا اندپوینت /api/menus/my منوهای کاربر لاگین شده را برمی‌گرداند، نه کاربری که انتخاب شده است.
-        // اگر می‌خواهید منوهای قابل دسترسی برای *کاربر انتخاب شده در لیست* را ببینید، باید
-        // یا یک اندپوینت جدید در بک‌اند برای ادمین ایجاد کنید (مثلاً /api/menus/for-user/{userId})
-        // یا منطق را در اینجا تغییر دهید.
-        // برای سادگی، فعلاً فرض می‌کنیم می‌خواهیم منوهای کاربر لاگین شده را ببینیم.
-        // اما منطقی‌تر است که ادمین بتواند منوهای هر کاربری را مشاهده کند.
-
-        // برای نمایش منوهای قابل دسترسی کاربر انتخاب شده (نیاز به اندپوینت جدید در بک‌اند)
-        fetch(`/api/menus/for-user/${userId}`) // <<-- این اندپوینت را در MenuController اضافه کنید (مثلاً @PreAuthorize("hasRole('ADMIN')"))
+        fetch(`/api/menus/for-user/${userId}`)
             .then(res => {
                 if (!res.ok) {
                     throw new Error(`HTTP error! status: ${res.status}`);
@@ -155,11 +164,13 @@
                     });
                 }
             })
-            .catch(error => console.error('Error loading user accessible menus:', error));
+            .catch(error => {
+                showMessageManage('❌ خطا در بارگذاری منوهای قابل دسترسی کاربر: ' + error.message, 'error');
+                console.error('Error loading user accessible menus:', error);
+            });
+        showMessageManage('', '');
     }
 
-
-    // 4. اختصاص نقش به کاربر
     function assignRoleToUser() {
         const userId = document.getElementById('userSelect').value;
         const roleName = document.getElementById('roleSelect').value;
@@ -169,30 +180,30 @@
             return;
         }
 
-        // اندپوینت برای اختصاص/به‌روزرسانی نقش‌های کاربر (نیاز به متد در UserController)
         fetch(`/api/users/${userId}/roles`, {
-            method: 'PUT', // یا POST اگر فقط اضافه می‌کنید
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ roleName: roleName }) // ارسال نام نقش به بک‌اند
+            body: JSON.stringify({ roleName: roleName })
         })
             .then(res => {
                 if (!res.ok) {
-                    if (res.status === 404) throw new Error('کاربر یا نقش یافت نشد.');
-                    if (res.status === 400) return res.json().then(err => { throw new Error(err.message || 'درخواست نامعتبر'); });
-                    throw new Error(`HTTP error! status: ${res.status}`);
+                    return res.text().then(text => {
+                        throw new Error(text || `HTTP error! status: ${res.status}`);
+                    });
                 }
-                return res.json(); // اگر بک‌اند چیزی برمی‌گرداند
+                return res.text();
             })
-            .then(data => {
-                alert('نقش با موفقیت اختصاص یافت.');
-                loadUserRolesAndMenus(); // بارگذاری مجدد اطلاعات کاربر
+            .then(message => {
+                showMessageManage(message, 'success');
+                loadUserRolesAndMenus();
             })
-            .catch(error => alert('خطا در اختصاص نقش: ' + error.message));
+            .catch(error => {
+                showMessageManage('❌ خطا در اختصاص نقش: ' + error.message, 'error');
+                console.error('Error assigning role:', error);
+            });
     }
 
-    // هنگام لود شدن صفحه، ابتدا کاربران را بارگذاری کنید.
     window.onload = loadUsers;
 </script>
-
 </body>
 </html>

@@ -1,9 +1,23 @@
-<!-- user-list.html -->
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <title>لیست کاربران</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        h2 { color: #0056b3; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background-color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        th, td { padding: 12px 15px; text-align: right; border-bottom: 1px solid #ddd; }
+        th { background-color: #007bff; color: white; font-weight: bold; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        button { background-color: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; }
+        button:hover { background-color: #c82333; }
+        a { display: inline-block; margin-top: 20px; padding: 10px 15px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; }
+        a:hover { background-color: #218838; }
+        #message { margin-top: 15px; padding: 10px; border-radius: 5px; font-weight: bold; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    </style>
 </head>
 <body>
 <h2>مدیریت کاربران</h2>
@@ -18,59 +32,95 @@
     </tr>
     </thead>
     <tbody id="userTableBody">
-    <!-- داده‌ها به صورت داینامیک اضافه می‌شن -->
     </tbody>
 </table>
 
 <p id="message"></p>
 
 <a href="create-user.html">➕ افزودن کاربر جدید</a>
+<br>
+<a href="manage-user-menus.html">🛠️ مدیریت نقش و منوهای کاربران</a>
+
 
 <script>
+    // تابع کمکی برای نمایش پیام‌ها
+    function showMessage(msg, type) {
+        const messageElement = document.getElementById('message');
+        messageElement.innerText = msg;
+        messageElement.className = ''; // پاک کردن کلاس‌های قبلی
+
+        // فقط در صورتی که 'type' خالی نباشد، کلاس اضافه کنید
+        if (type) {
+            messageElement.classList.add(type);
+        }
+    }
+
     function loadUsers() {
-        fetch('/admin/users')
-            .then(response => response.json())
+        // مسیر API را به /api/users تغییر دهید
+        fetch('/api/users')
+            .then(response => {
+                if (!response.ok) { // بررسی وضعیت پاسخ HTTP
+                    throw new Error('خطا در دریافت کاربران: ' + response.statusText);
+                }
+                return response.json();
+            })
             .then(data => {
                 const tbody = document.getElementById('userTableBody');
                 tbody.innerHTML = ''; // پاک‌کردن قبل از بارگذاری مجدد
-                data.forEach(user => {
-                    const tr = document.createElement('tr');
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4">کاربری یافت نشد.</td></tr>';
+                } else {
+                    data.forEach(user => {
+                        const tr = document.createElement('tr');
 
-                    tr.innerHTML = `
-                        <td>${user.id}</td>
-                        <td>${user.username}</td>
-                        <td>${user.roles.join(', ')}</td>
-                        <td>
-                            <button onclick="deleteUser(${user.id})">🗑 حذف</button>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
+                        tr.innerHTML = `
+                            <td>${user.id}</td>
+                            <td>${user.username}</td>
+                            <td>${user.roles.join(', ')}</td>
+                            <td>
+                                <button onclick="deleteUser(${user.id})">🗑 حذف</button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+                showMessage('', ''); // پاک کردن پیام قبلی در صورت موفقیت
             })
             .catch(error => {
-                document.getElementById('message').innerText = '❌ خطا در دریافت کاربران';
+                showMessage('❌ خطا در دریافت کاربران: ' + error.message, 'error');
                 console.error(error);
             });
     }
 
     function deleteUser(id) {
         if (confirm('آیا مطمئن هستید که می‌خواهید کاربر را حذف کنید؟')) {
-            fetch(`/admin/users/${id}`, {
+            // مسیر API را به /api/users/${id} تغییر دهید
+            fetch(`/api/users/${id}`, {
                 method: 'DELETE'
             })
                 .then(response => {
                     if (response.ok) {
-                        document.getElementById('message').innerText = '✅ کاربر حذف شد';
+                        showMessage('✅ کاربر با موفقیت حذف شد', 'success');
                         loadUsers(); // بارگذاری مجدد
                     } else {
-                        document.getElementById('message').innerText = '❌ خطا در حذف کاربر';
+                        // در صورت خطا، پیام خطا را از بدنه پاسخ API دریافت کنید
+                        response.text().then(errorMessage => {
+                            showMessage('❌ خطا در حذف کاربر: ' + errorMessage, 'error');
+                        }).catch(err => {
+                            showMessage('❌ خطا در حذف کاربر (پیام نامشخص)', 'error');
+                            console.error('Error parsing error message:', err);
+                        });
                     }
+                })
+                .catch(error => {
+                    showMessage('❌ خطای شبکه در حذف کاربر: ' + error.message, 'error');
+                    console.error('Network error:', error);
                 });
         }
     }
 
-    // بارگذاری اولیه
-    loadUsers();
+    // بارگذاری اولیه کاربران هنگام لود شدن صفحه
+    window.onload = loadUsers;
 </script>
 </body>
 </html>
