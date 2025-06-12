@@ -29,13 +29,21 @@ public class UserService {
 
     public void createDefaultAdminIfNotExists() {
         if (userRepository.count() == 0) {
-            Permission perm = new Permission();
-            perm.setName("MANAGE_ALL");
-            permissionRepository.save(perm);
+            Permission p1 = new Permission();
+            p1.setName("PERM_USER_MENU_MANAGEMENT");
+
+            Permission p2 = new Permission();
+            p2.setName("PERM_USER_LIST");
+
+            Permission p3 = new Permission();
+            p3.setName("PERM_CREATE_USER");
+
+            permissionRepository.saveAll(Arrays.asList(p1, p2, p3));
 
             Role role = new Role();
             role.setName("ROLE_ADMIN");
-            role.setPermissions(Collections.singleton(perm));
+            role.setPermissions(new HashSet<>(Arrays.asList(p1, p2, p3)));
+
             roleRepository.save(role);
 
             User admin = new User();

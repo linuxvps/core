@@ -12,6 +12,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/menus")
+@PreAuthorize("hasAnyRole('ADMIN', 'USER')")
 public class MenuController {
 
     @Autowired
@@ -25,7 +26,6 @@ public class MenuController {
 
     // فقط ادمین‌ها بتونن منو اضافه کنن
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> createMenu(@RequestBody Menu menu) {
         menuService.saveMenu(menu);
         return ResponseEntity.ok().build();
@@ -33,7 +33,6 @@ public class MenuController {
 
     // حذف منو
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> deleteMenu(@PathVariable Long id) {
         menuService.deleteMenu(id);
         return ResponseEntity.ok().build();
@@ -41,7 +40,6 @@ public class MenuController {
 
     // لیست همه منوها برای ادمین
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public List<Menu> getAllMenus() {
         return menuService.getAllMenus();
     }

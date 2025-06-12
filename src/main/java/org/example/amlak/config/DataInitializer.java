@@ -20,28 +20,27 @@ public class DataInitializer implements CommandLineRunner {
         userService.createDefaultAdminIfNotExists();
 
         if (menuRepository.count() == 0) {
+            Menu m1 = new Menu();
+            m1.setTitle("دسترسی یوزر ها");
+            m1.setUrl("/manage-user-menus.html");
+            m1.setPermission("PERM_USER_MENU_MANAGEMENT");
+            m1.setOrderIndex(1);
+
             Menu m2 = new Menu();
             m2.setTitle("لیست یوزر ها");
             m2.setUrl("/user-list.html");
-            m2.setPermission("ROLE_ADMIN");
-            m2.setOrderIndex(1);
-
-
-            Menu m1 = new Menu();
-            m1.setTitle("دسترسی یوزر ها");
-            m1.setUrl("manage-user-menus.html");
-            m1.setPermission("ROLE_ADMIN");
-            m1.setOrderIndex(2);
+            m2.setPermission("PERM_USER_LIST");
+            m2.setOrderIndex(2);
 
             Menu m3 = new Menu();
             m3.setTitle("ایجاد یوزر");
             m3.setUrl("/create-user.html");
-            m3.setPermission("ROLE_ADMIN");
+            m3.setPermission("PERM_CREATE_USER");
             m3.setOrderIndex(3);
 
             menuRepository.saveAll(Arrays.asList(m1, m2, m3));
-
             System.out.println("✅ منوهای اولیه اضافه شدند.");
         }
+
     }
 }
