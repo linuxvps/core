@@ -3,12 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <title>صفحه اصلی</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            direction: rtl;
+        }
+
+        nav {
+            background-color: #f1f1f1;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+
+        nav ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        nav li {
+            display: inline-block;
+            margin-left: 15px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: #333;
+        }
+    </style>
 </head>
 <body>
-<div class="container">
-    <h1>سلام حاجی 😎</h1>
-    <p>خوش اومدی به صفحه اصلی برنامه.</p>
-</div>
+
+<!-- منوی بالا -->
+<nav>
+    <ul id="mainMenu">
+        <!-- منوها با جاوااسکریپت اضافه می‌شن -->
+    </ul>
+</nav>
+
+<!-- محتوای صفحه -->
+<h2>به پنل خوش آمدید</h2>
+<p>محتوای صفحه اصلی اینجاست...</p>
+
+<script>
+    fetch('/api/menus/my')
+        .then(res => {
+            if (!res.ok) throw new Error('مشکل در دریافت منو');
+            return res.json();
+        })
+        .then(data => {
+            const ul = document.getElementById("mainMenu");
+            data.sort((a, b) => a.orderIndex - b.orderIndex);
+            data.forEach(menu => {
+                const li = document.createElement("li");
+                const a = document.createElement("a");
+                a.href = menu.url;
+                a.innerText = menu.title;
+                li.appendChild(a);
+                ul.appendChild(li);
+            });
+        })
+        .catch(err => {
+            console.error("⛔ خطا در بارگذاری منو:", err);
+        });
+</script>
+
 </body>
-<p>sddddddddddddddddddddddddddd</p>
 </html>
