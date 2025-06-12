@@ -1,6 +1,7 @@
 package org.example.amlak.model;
 
 import javax.persistence.*;
+
 @Entity
 public class Menu {
     @Id @GeneratedValue
@@ -8,47 +9,59 @@ public class Menu {
 
     private String title;
     private String url;
-    private String permission; // مثلاً: "VIEW_DASHBOARD"
+
+    @ManyToOne // یک منو می‌تواند به یک مجوز نیاز داشته باشد
+    @JoinColumn(name = "required_permission_id") // نام ستون کلید خارجی در جدول menu
+    private Permission requiredPermission; // نام فیلد تغییر کرد برای وضوح بیشتر
 
     private Integer orderIndex;
 
     public Long getId() {
         return id;
+        //
     }
 
     public void setId(Long id) {
         this.id = id;
+        //
     }
 
     public String getTitle() {
         return title;
+        //
     }
 
     public void setTitle(String title) {
         this.title = title;
+        //
     }
 
     public String getUrl() {
         return url;
+        //
     }
 
     public void setUrl(String url) {
         this.url = url;
+        //
     }
 
-    public String getPermission() {
-        return permission;
+    // گتتر و ستتر جدید برای requiredPermission
+    public Permission getRequiredPermission() {
+        return requiredPermission;
     }
 
-    public void setPermission(String permission) {
-        this.permission = permission;
+    public void setRequiredPermission(Permission requiredPermission) {
+        this.requiredPermission = requiredPermission;
     }
 
     public Integer getOrderIndex() {
         return orderIndex;
+        //
     }
 
     public void setOrderIndex(Integer orderIndex) {
         this.orderIndex = orderIndex;
+        //
     }
 }
