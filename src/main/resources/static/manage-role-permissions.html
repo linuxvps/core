@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>مدیریت مجوزهای نقش‌ها</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        h2, h3 { color: #0056b3; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        select, button { padding: 10px 15px; margin-bottom: 15px; border-radius: 5px; border: 1px solid #ddd; font-size: 1rem; cursor: pointer; }
+        button { background-color: #007bff; color: white; border: none; }
+        button:hover { background-color: #0056b3; }
+        button.add-permission-btn { background-color: #28a745; margin-left: 10px; }
+        button.add-permission-btn:hover { background-color: #218838; }
+        button.remove-permission-btn { background-color: #dc3545; margin-right: 5px; }
+        button.remove-permission-btn:hover { background-color: #c82333; }
+        ul { list-style-type: none; padding: 0; }
+        li { background-color: #e9e9e9; margin-bottom: 8px; padding: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
+        /* استایل‌های پیام در داخل صفحه (messageDisplay) */
+        #messageDisplay { margin-top: 15px; padding: 10px; border-radius: 5px; font-weight: bold; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+        /* استایل‌های پاپ‌آپ جدید */
+        .popup-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #4CAF50; /* سبز برای موفقیت */
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            opacity: 0; /* ابتدا نامرئی است */
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            transform: translateY(-50px); /* انیمیشن از بالا */
+            min-width: 250px;
+            text-align: center;
+        }
+        .popup-message.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .popup-message.error-popup {
+            background-color: #f44336; /* قرمز برای خطا */
+        }
+        .popup-message .close-btn {
+            position: absolute;
+            top: 5px;
+            left: 10px;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<h2>مدیریت مجوزهای نقش‌ها</h2>
+
+<label for="roleSelect">انتخاب نقش:</label>
+<select id="roleSelect" onchange="loadRolePermissions()">
+</select>
+
+<h3>مجوزهای این نقش</h3>
+<ul id="rolePermissions"></ul>
+
+<hr>
+
+<h3>افزودن مجوز جدید به این نقش</h3>
+<label for="availablePermissionsSelect">انتخاب مجوز:</label>
+<select id="availablePermissionsSelect">
+</select><br><br>
+
+<button onclick="addPermissionToSelectedRole()" class="add-permission-btn">افزودن مجوز</button>
+
+<p id="messageDisplay"></p>
+
+<br>
+<a href="user-list.html">⬅️ بازگشت به لیست کاربران</a>
+<br>
+<a href="create-role.html">➕ ایجاد نقش جدید</a>
+<br>
+<a href="create-permission.html">➕ ایجاد مجوز جدید</a>
+
+<div id="popupMessage" class="popup-message">
+    <span class="close-btn" onclick="hidePopup()">&times;</span>
+    <p id="popupText"></p>
+</div>
+
+
+<script>
+    let allRoles = [];
+    let allPermissions = [];
+    let selectedRoleName = '';
+    let popupTimeout; // برای نگهداری تایم‌اوت پاپ‌آپ
+
+    // تابع برای نمایش پاپ‌آپ
+    function showPopup(msg, type) {
+        const popup = document.getElementById('popupMessage');
+        const popupText = document.getElementById('popupText');
+
+        // پاک کردن تایم‌اوت قبلی اگر وجود دارد
+        clearTimeout(popupTimeout);
+
+        popupText.innerText = msg;
+        popup.className = 'popup-message show'; // نمایش پاپ‌آپ با انیمیشن
+
+        if (type === 'error') {
+            popup.classList.add('error-popup'); // افزودن کلاس خطا
+        } else {
+            popup.classList.remove('error-popup');
+        }
+
+        // پاپ‌آپ را بعد از 3 ثانیه پنهان کنید
+        popupTimeout = setTimeout(() => {
+            hidePopup();
+        }, 3000);
+    }
+
+    // تابع برای پنهان کردن پاپ‌آپ
+    function hidePopup() {
+        const popup = document.getElementById('popupMessage');
+        popup.classList.remove('show');
+        // پاک کردن کلاس‌های خطا برای استفاده مجدد
+        popup.classList.remove('error-popup');
+    }
+
+    // تابع کمکی برای نمایش پیام‌ها در داخل صفحه (همچنان نگه داشته شده)
+    function showMessage(msg, type) {
+        const messageDisplay = document.getElementById('messageDisplay');
+        const messageParagraph = messageDisplay.querySelector('p');
+        messageParagraph.innerText = msg;
+        messageDisplay.className = 'message-container';
+        if (type) {
+            messageDisplay.classList.add(type);
+        }
+    }
+
+
+    function loadRolesIntoDropdown() {
+        console.log("Attempting to load roles...");
+        fetch('/api/roles')
+            .then(res => {
+                if (!res.ok) {
+                    console.error('Failed to load roles: ', res.status, res.statusText);
+                    throw new Error(`HTTP error! status: ${res.status} - ${res.status === 404 ? 'اندپوینت یافت نشد یا دسترسی رد شد.' : 'خطای سرور.'}`);
+                }
+                return res.json();
+            })
+            .then(data => {
+                console.log("Roles loaded successfully:", data);
+                allRoles = data;
+                const select = document.getElementById('roleSelect');
+                select.innerHTML = '<option value="">-- یک نقش انتخاب کنید --</option>';
+                data.forEach(role => {
+                    const option = document.createElement('option');
+                    option.value = role.name;
+                    option.innerText = role.name;
+                    select.appendChild(option);
+                });
+            })
+            .catch(error => {
+                showMessage('❌ خطا در بارگذاری نقش‌ها: ' + error.message, 'error');
+                showPopup('❌ خطا در بارگذاری نقش‌ها', 'error'); // نمایش خطا در پاپ‌آپ
+                console.error('Error loading roles:', error);
+            });
+    }
+
+
+    function loadPermissionsIntoDropdown() {
+        console.log("Attempting to load permissions...");
+        fetch('/api/permissions')
+            .then(res => {
+                if (!res.ok) {
+                    console.error('Failed to load permissions: ', res.status, res.statusText);
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+            })
+            .then(data => {
+                console.log("Permissions loaded successfully:", data);
+                allPermissions = data;
+                const select = document.getElementById('availablePermissionsSelect');
+                select.innerHTML = '<option value="">-- یک مجوز انتخاب کنید --</option>';
+                data.forEach(permission => {
+                    const option = document.createElement('option');
+                    option.value = permission.name;
+                    option.innerText = permission.name;
+                    select.appendChild(option);
+                });
+            })
+            .catch(error => {
+                showMessage('❌ خطا در بارگذاری مجوزها: ' + error.message, 'error');
+                showPopup('❌ خطا در بارگذاری مجوزها', 'error'); // نمایش خطا در پاپ‌آپ
+                console.error('Error loading permissions:', error);
+            });
+    }
+
+
+    function loadRolePermissions() {
+        const roleSelectElement = document.getElementById('roleSelect');
+        const roleName = roleSelectElement.value;
+        selectedRoleName = roleName;
+
+        const ul = document.getElementById('rolePermissions');
+        ul.innerHTML = '';
+
+        if (!roleName) {
+            ul.innerHTML = '<li>نقشی انتخاب نشده است.</li>';
+            showMessage('', '');
+            hidePopup(); // پنهان کردن پاپ‌آپ اگر کاربر انتخاب نشده
+            return;
+        }
+        console.log(`Loading permissions for role: ${roleName}`);
+
+        fetch(`/api/roles/${roleName}`)
+            .then(res => {
+                if (!res.ok) {
+                    console.error('Failed to load role permissions: ', res.status, res.statusText);
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+            })
+            .then(role => {
+                console.log("Role permissions loaded:", role.permissions);
+                if (role.permissions.length === 0) {
+                    ul.innerHTML = '<li>این نقش مجوزی ندارد.</li>';
+                } else {
+                    role.permissions.forEach(permission => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `
+                            <span>${permission.name}</span>
+                            <button class="remove-permission-btn" onclick="removePermissionFromRole('${roleName}', '${permission.name}')">حذف</button>
+                        `;
+                        ul.appendChild(li);
+                    });
+                }
+                showMessage('', '');
+                hidePopup(); // پنهان کردن پاپ‌آپ بعد از بارگذاری موفق
+            })
+            .catch(error => {
+                showMessage('❌ خطا در بارگذاری مجوزهای نقش: ' + error.message, 'error');
+                showPopup('❌ خطا در بارگذاری مجوزهای نقش', 'error'); // نمایش خطا در پاپ‌آپ
+                console.error('Error loading role permissions:', error);
+            });
+    }
+
+
+    function addPermissionToSelectedRole() {
+        console.log("Add Permission button clicked.");
+        const roleName = selectedRoleName;
+        const permissionSelectElement = document.getElementById('availablePermissionsSelect');
+        const permissionName = permissionSelectElement.value;
+
+        console.log(`Attempting to add permission: ${permissionName} to role: ${roleName}`);
+
+        if (!roleName) {
+            alert('لطفاً یک نقش را انتخاب کنید.');
+            console.warn("No role selected.");
+            return;
+        }
+        if (!permissionName) {
+            alert('لطفاً یک مجوز را برای افزودن انتخاب کنید.');
+            console.warn("No permission selected.");
+            return;
+        }
+
+        fetch(`/api/roles/${roleName}/permissions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                roleName: roleName,
+                permissionName: permissionName
+            })
+        })
+            .then(res => {
+                console.log("Response received from add permission API:", res);
+                if (!res.ok) {
+                    return res.text().then(text => {
+                        console.error('API Error Response Text:', text);
+                        throw new Error(text || `HTTP error! status: ${res.status}`);
+                    });
+                }
+                return res.text();
+            })
+            .then(message => {
+                console.log("Permission added successfully:", message);
+                showMessage(message, 'success');
+                showPopup(message, 'success'); // نمایش پیام موفقیت در پاپ‌آپ
+                loadRolePermissions();
+            })
+            .catch(error => {
+                showMessage('❌ خطا در افزودن مجوز: ' + error.message, 'error');
+                showPopup('❌ خطا در افزودن مجوز', 'error'); // نمایش خطا در پاپ‌آپ
+                console.error('Error adding permission:', error);
+            });
+    }
+
+
+    function removePermissionFromRole(roleName, permissionName) {
+        if (confirm(`آیا مطمئن هستید که می‌خواهید مجوز "${permissionName}" را از نقش "${roleName}" حذف کنید؟`)) {
+            console.log(`Attempting to remove permission: ${permissionName} from role: ${roleName}`);
+            fetch(`/api/roles/${roleName}/permissions/${permissionName}`, {
+                method: 'DELETE'
+            })
+                .then(res => {
+                    console.log("Response received from remove permission API:", res);
+                    if (!res.ok) {
+                        return res.text().then(text => {
+                            console.error('API Error Response Text:', text);
+                            throw new Error(text || `HTTP error! status: ${res.status}`);
+                        });
+                    }
+                    return res.text();
+                })
+                .then(message => {
+                    console.log("Permission removed successfully:", message);
+                    showMessage(message, 'success');
+                    showPopup(message, 'success'); // نمایش پیام موفقیت در پاپ‌آپ
+                    loadRolePermissions();
+                })
+                .catch(error => {
+                    showMessage('❌ خطا در حذف مجوز: ' + error.message, 'error');
+                    showPopup('❌ خطا در حذف مجوز', 'error'); // نمایش خطا در پاپ‌آپ
+                    console.error('Error removing permission:', error);
+                });
+        }
+    }
+
+    window.onload = function() {
+        console.log("Page loaded. Initializing dropdowns.");
+        loadRolesIntoDropdown();
+        loadPermissionsIntoDropdown();
+        showMessage('', ''); // پاک کردن پیام اولیه
+        hidePopup(); // اطمینان از پنهان بودن پاپ‌آپ در ابتدا
+    };
+</script>
+</body>
+</html>

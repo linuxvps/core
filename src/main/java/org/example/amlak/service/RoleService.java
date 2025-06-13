@@ -2,6 +2,7 @@
 package org.example.amlak.service;
 
 import org.example.amlak.dto.RoleCreateRequest;
+import org.example.amlak.dto.RolePermissionUpdateRequest; // DTO جدید را ایمپورت کنید
 import org.example.amlak.model.Permission;
 import org.example.amlak.model.Role;
 import org.example.amlak.repository.PermissionRepository;
@@ -21,7 +22,7 @@ public class RoleService {
     @Autowired
     private RoleRepository roleRepository;
     @Autowired
-    private PermissionRepository permissionRepository; // برای پیدا کردن مجوزها
+    private PermissionRepository permissionRepository;
 
     /**
      * ایجاد یک نقش جدید و تخصیص مجوزهای مشخص شده به آن.
@@ -30,30 +31,25 @@ public class RoleService {
      * @throws IllegalArgumentException اگر نقشی با همین نام از قبل وجود داشته باشد یا مجوزی یافت نشود.
      */
     public Role createRole(RoleCreateRequest request) {
-        // 1. بررسی وجود نقش با همین نام
         if (roleRepository.findByName(request.getName()).isPresent()) {
             throw new IllegalArgumentException("نقش با نام '" + request.getName() + "' قبلاً موجود است.");
         }
 
-        // 2. پیدا کردن اشیاء Permission بر اساس نام‌ها
         Set<Permission> permissions = new HashSet<>();
         if (request.getPermissionNames() != null && !request.getPermissionNames().isEmpty()) {
             permissions = new HashSet<>(permissionRepository.findByNameIn(request.getPermissionNames()));
 
-            // بررسی کنید که آیا تمام مجوزهای درخواستی پیدا شده‌اند
-            if (permissions.size() != request.getPermissionNames().size()) {
-                // می‌توانید دقیقاً بگویید کدام مجوزها پیدا نشده‌اند
-                Set<String> foundPermissionNames = permissions.stream()
-                        .map(Permission::getName)
-                        .collect(Collectors.toSet());
-                List<String> notFoundPermissions = request.getPermissionNames().stream()
-                        .filter(name -> !foundPermissionNames.contains(name))
-                        .collect(Collectors.toList());
+            Set<String> foundPermissionNames = permissions.stream()
+                    .map(Permission::getName)
+                    .collect(Collectors.toSet());
+            List<String> notFoundPermissions = request.getPermissionNames().stream()
+                    .filter(name -> !foundPermissionNames.contains(name))
+                    .collect(Collectors.toList());
+            if (!notFoundPermissions.isEmpty()) {
                 throw new IllegalArgumentException("یک یا چند مجوز یافت نشدند: " + String.join(", ", notFoundPermissions));
             }
         }
 
-        // 3. ایجاد و ذخیره نقش
         Role role = new Role();
         role.setName(request.getName());
         role.setPermissions(permissions);
@@ -61,8 +57,62 @@ public class RoleService {
         return roleRepository.save(role);
     }
 
-    // TODO: می‌توانید متدهای حذف نقش، به‌روزرسانی مجوزهای یک نقش را اینجا اضافه کنید.
-    // مثال:
-    // public void deleteRole(Long id) { ... }
-    // public Role updateRolePermissions(Long roleId, List<String> newPermissionNames) { ... }
+    /**
+     * دریافت لیست تمام نقش‌ها.
+     * @return لیستی از تمام اشیاء Role.
+     */
+    public List<Role> getAllRoles() {
+        return roleRepository.findAll();
+    }
+
+    /**
+     * دریافت یک نقش بر اساس نام.
+     * @param roleName نام نقش.
+     * @return شیء Role.
+     * @throws NoSuchElementException اگر نقش یافت نشود.
+     */
+    public Role getRoleByName(String roleName) {
+        return roleRepository.findByName(roleName)
+                .orElseThrow(() -> new NoSuchElementException("نقش با نام '" + roleName + "' یافت نشد."));
+    }
+
+    /**
+     * افزودن یک مجوز به یک نقش.
+     * @param roleName نام نقش.
+     * @param permissionName نام مجوزی که باید اضافه شود.
+     * @throws NoSuchElementException اگر نقش یا مجوز یافت نشود.
+     * @throws IllegalArgumentException اگر مجوز از قبل به نقش اختصاص یافته باشد.
+     */
+    public Role addPermissionToRole(String roleName, String permissionName) {
+        Role role = getRoleByName(roleName);
+        Permission permission = permissionRepository.findByName(permissionName)
+                .orElseThrow(() -> new NoSuchElementException("مجوز با نام '" + permissionName + "' یافت نشد."));
+
+        if (role.getPermissions().contains(permission)) {
+            throw new IllegalArgumentException("مجوز '" + permissionName + "' قبلاً به نقش '" + roleName + "' اختصاص یافته است.");
+        }
+
+        role.getPermissions().add(permission);
+        return roleRepository.save(role);
+    }
+
+    /**
+     * حذف یک مجوز از یک نقش.
+     * @param roleName نام نقش.
+     * @param permissionName نام مجوزی که باید حذف شود.
+     * @throws NoSuchElementException اگر نقش یا مجوز یافت نشود.
+     * @throws IllegalArgumentException اگر مجوز به نقش اختصاص نیافته باشد.
+     */
+    public Role removePermissionFromRole(String roleName, String permissionName) {
+        Role role = getRoleByName(roleName);
+        Permission permission = permissionRepository.findByName(permissionName)
+                .orElseThrow(() -> new NoSuchElementException("مجوز با نام '" + permissionName + "' یافت نشد."));
+
+        if (!role.getPermissions().contains(permission)) {
+            throw new IllegalArgumentException("مجوز '" + permissionName + "' به نقش '" + roleName + "' اختصاص نیافته است.");
+        }
+
+        role.getPermissions().remove(permission);
+        return roleRepository.save(role);
+    }
 }
