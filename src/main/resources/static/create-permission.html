@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>ایجاد مجوز جدید</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        h2 { color: #0056b3; }
+        form div { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"] { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button { padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1rem; }
+        button:hover { background-color: #218838; }
+        .message-container { margin-top: 15px; padding: 10px; border-radius: 5px; font-weight: bold; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        a { display: inline-block; margin-top: 20px; padding: 10px 15px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; }
+        a:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+<h2>ایجاد مجوز جدید</h2>
+
+<div id="messageDisplay" class="message-container">
+    <p></p>
+</div>
+
+<form id="createPermissionForm">
+    <div>
+        <label for="permissionName">نام مجوز (مثال: VIEW_PRODUCTS):</label>
+        <input type="text" id="permissionName" name="name" required>
+    </div>
+    <button type="submit">ایجاد مجوز</button>
+</form>
+
+<br>
+<a href="/user-list.html">⬅️ بازگشت به لیست کاربران</a>
+<br>
+<a href="/create-role.html">➕ ایجاد نقش جدید</a>
+<br>
+<a href="/manage-user-menus.html">🛠️ مدیریت نقش و منوهای کاربران</a>
+
+
+<script>
+    // تابع کمکی برای نمایش پیام‌ها
+    function showMessage(msg, type) {
+        const messageDisplay = document.getElementById('messageDisplay');
+        const messageParagraph = messageDisplay.querySelector('p');
+        messageParagraph.innerText = msg;
+        messageDisplay.className = 'message-container'; // ریست کردن کلاس‌ها
+        if (type) {
+            messageDisplay.classList.add(type); // افزودن کلاس success یا error
+        }
+    }
+
+    // Event Listener برای ارسال فرم
+    document.getElementById('createPermissionForm').addEventListener('submit', function(event) {
+        event.preventDefault(); // جلوگیری از ارسال پیش‌فرض فرم
+
+        const permissionName = document.getElementById('permissionName').value;
+
+        // ساخت شیء درخواست JSON
+        const permissionData = {
+            name: permissionName.trim() // حذف فاصله‌های اضافی
+        };
+
+        // بررسی خالی بودن نام
+        if (!permissionData.name) {
+            showMessage('❌ نام مجوز نمی‌تواند خالی باشد.', 'error');
+            return;
+        }
+
+        // ارسال درخواست POST به API
+        fetch('/api/permissions', { // مسیر API که در PermissionController تعریف کردیم
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(permissionData)
+        })
+            .then(response => {
+                if (response.ok) {
+                    return response.text(); // اگر بک‌اند پیام متنی برمی‌گرداند
+                } else {
+                    return response.text().then(errorMessage => {
+                        throw new Error(errorMessage || 'خطا در ایجاد مجوز'); // پیام خطا از بک‌اند
+                    });
+                }
+            })
+            .then(message => {
+                showMessage(message, 'success');
+                document.getElementById('createPermissionForm').reset(); // ریست کردن فرم بعد از موفقیت
+            })
+            .catch(error => {
+                showMessage('❌ ' + error.message, 'error');
+                console.error('Error creating permission:', error);
+            });
+    });
+
+    // هنگام لود شدن صفحه، هیچ داده‌ای برای لود نیست
+    window.onload = function() {
+        // می‌توانید اینجا پیام‌های اولیه را پاک کنید اگر از redirect آمده‌اید
+        showMessage('', '');
+    };
+</script>
+</body>
+</html>
