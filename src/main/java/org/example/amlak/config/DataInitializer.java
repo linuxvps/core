@@ -101,6 +101,7 @@ public class DataInitializer implements CommandLineRunner {
             Optional<Permission> permCreateUserOpt = permissionRepository.findByName("PERM_CREATE_USER");
             Optional<Permission> permViewDashboardOpt = permissionRepository.findByName("VIEW_DASHBOARD");
             Optional<Permission> permCreateRoleOpt = permissionRepository.findByName("PERM_CREATE_RO");
+
             if (!permCreateRoleOpt.isPresent() || !permUserMenuManagementOpt.isPresent() || !permUserListOpt.isPresent() || !permCreateUserOpt.isPresent() || !permViewDashboardOpt.isPresent()) {
                 System.err.println("❌ خطای دیتابیس: برخی از مجوزهای مورد نیاز برای منوها یافت نشدند. اطمینان حاصل کنید که این مجوزها در مرحله قبل ایجاد شده‌اند.");
                 throw new IllegalStateException("Required permissions for menus not found during initialization.");
