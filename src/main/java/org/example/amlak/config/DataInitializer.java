@@ -18,10 +18,14 @@ import java.util.Optional;
 @Component
 public class DataInitializer implements CommandLineRunner {
 
-    @Autowired private UserService userService;
-    @Autowired private MenuRepository menuRepository;
-    @Autowired private PermissionRepository permissionRepository;
-    @Autowired private RoleRepository roleRepository;
+    @Autowired
+    private UserService userService;
+    @Autowired
+    private MenuRepository menuRepository;
+    @Autowired
+    private PermissionRepository permissionRepository;
+    @Autowired
+    private RoleRepository roleRepository;
 
     @Override
     public void run(String... args) {
@@ -48,13 +52,17 @@ public class DataInitializer implements CommandLineRunner {
             Permission permCreateUser = new Permission();
             permCreateUser.setName("PERM_CREATE_USER");
 
+            Permission permCreateRole = new Permission();
+            permCreateRole.setName("PERM_CREATE_RO");
+
             permissionRepository.saveAll(Arrays.asList(
                     permViewDashboard,
                     permManageUsers,
                     permViewReports,
                     permUserMenuManagement,
                     permUserList,
-                    permCreateUser
+                    permCreateUser,
+                    permCreateRole
             ));
             System.out.println("✅ مجوزهای اولیه اضافه شدند.");
 
@@ -67,7 +75,8 @@ public class DataInitializer implements CommandLineRunner {
                     permViewReports,
                     permUserMenuManagement,
                     permUserList,
-                    permCreateUser
+                    permCreateUser,
+                    permCreateRole
             )));
             roleRepository.save(adminRole);
             System.out.println("✅ نقش 'ROLE_ADMIN' اضافه شد.");
@@ -91,8 +100,8 @@ public class DataInitializer implements CommandLineRunner {
             Optional<Permission> permUserListOpt = permissionRepository.findByName("PERM_USER_LIST");
             Optional<Permission> permCreateUserOpt = permissionRepository.findByName("PERM_CREATE_USER");
             Optional<Permission> permViewDashboardOpt = permissionRepository.findByName("VIEW_DASHBOARD");
-
-            if (!permUserMenuManagementOpt.isPresent() || !permUserListOpt.isPresent() || !permCreateUserOpt.isPresent() || !permViewDashboardOpt.isPresent()) {
+            Optional<Permission> permCreateRoleOpt = permissionRepository.findByName("PERM_CREATE_RO");
+            if (!permCreateRoleOpt.isPresent() || !permUserMenuManagementOpt.isPresent() || !permUserListOpt.isPresent() || !permCreateUserOpt.isPresent() || !permViewDashboardOpt.isPresent()) {
                 System.err.println("❌ خطای دیتابیس: برخی از مجوزهای مورد نیاز برای منوها یافت نشدند. اطمینان حاصل کنید که این مجوزها در مرحله قبل ایجاد شده‌اند.");
                 throw new IllegalStateException("Required permissions for menus not found during initialization.");
             }
@@ -101,6 +110,7 @@ public class DataInitializer implements CommandLineRunner {
             Permission permUserList = permUserListOpt.get();
             Permission permCreateUser = permCreateUserOpt.get();
             Permission permViewDashboard = permViewDashboardOpt.get();
+            Permission permCreateRole = permCreateRoleOpt.get();
 
             Menu m1 = new Menu();
             m1.setTitle("دسترسی یوزر ها");
@@ -120,13 +130,20 @@ public class DataInitializer implements CommandLineRunner {
             m3.setRequiredPermission(permCreateUser);
             m3.setOrderIndex(3);
 
+            Menu m4 = new Menu();
+            m4.setTitle("ایجاد نقش");
+            m4.setUrl("/create-role.html");
+            m4.setRequiredPermission(permCreateRole);
+            m4.setOrderIndex(4);
+
             Menu dashboardMenu = new Menu();
             dashboardMenu.setTitle("داشبورد");
             dashboardMenu.setUrl("/dashboard.html");
             dashboardMenu.setRequiredPermission(permViewDashboard);
             dashboardMenu.setOrderIndex(0);
 
-            menuRepository.saveAll(Arrays.asList(m1, m2, m3, dashboardMenu));
+
+            menuRepository.saveAll(Arrays.asList(m1, m2, m3, m4, dashboardMenu));
             System.out.println("✅ منوهای اولیه اضافه شدند.");
         }
     }
