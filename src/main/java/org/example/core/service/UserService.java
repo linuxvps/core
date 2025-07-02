@@ -46,7 +46,7 @@ public class UserService {
             // Create the admin user
             User admin = new User();
             admin.setUsername("admin"); //
-            admin.setPassword(passwordEncoder.encode("admin123")); // Hash the password
+            admin.setPassword(passwordEncoder.encode("admin")); // Hash the password
             admin.setEnabled(true); //
             admin.setRoles(Collections.singleton(adminRole)); // Assign the admin role
 
