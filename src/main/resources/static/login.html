@@ -7,9 +7,9 @@
         @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
 
         body {
-            font-family: 'Vazirmatn', sans-serif; /* استفاده از فونت فارسی زیبا */
+            font-family: 'Vazirmatn', sans-serif;
             direction: rtl;
-            background: linear-gradient(135deg, #71b7e6, #9b59b6); /* گرادیان پس‌زمینه جذاب */
+            background: linear-gradient(135deg, #71b7e6, #9b59b6);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -22,16 +22,22 @@
             background-color: #ffffff;
             padding: 40px;
             border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); /* سایه جذاب */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             width: 100%;
             max-width: 400px;
             text-align: center;
-            animation: fadeIn 1s ease-in-out; /* انیمیشن ورود */
+            animation: fadeIn 1s ease-in-out;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         h2 {
@@ -56,7 +62,7 @@
 
         .input-group {
             margin-bottom: 25px;
-            text-align: right; /* متن برچسب از راست */
+            text-align: right;
         }
 
         .input-group label {
@@ -68,23 +74,23 @@
         }
 
         .input-group input {
-            width: calc(100% - 20px); /* برای padding */
+            width: calc(100% - 20px);
             padding: 12px 10px;
             border: 1px solid #ddd;
             border-radius: 5px;
             font-size: 1em;
             transition: border-color 0.3s ease, box-shadow 0.3s ease;
-            box-sizing: border-box; /* padding در داخل width محاسبه شود */
+            box-sizing: border-box;
         }
 
         .input-group input:focus {
             border-color: #71b7e6;
             box-shadow: 0 0 8px rgba(113, 183, 230, 0.4);
-            outline: none; /* حذف outline پیش‌فرض مرورگر */
+            outline: none;
         }
 
         button {
-            background-color: #9b59b6; /* رنگ دکمه جذاب */
+            background-color: #9b59b6;
             color: white;
             padding: 15px 25px;
             border: none;
@@ -98,14 +104,28 @@
         }
 
         button:hover {
-            background-color: #8e44ad; /* رنگ تیره‌تر هنگام هاور */
-            transform: translateY(-3px); /* حرکت دکمه به بالا هنگام هاور */
+            background-color: #8e44ad;
+            transform: translateY(-3px);
+        }
+
+        .message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            font-weight: bold;
         }
 
         .error-message {
             color: #e74c3c;
-            margin-top: 15px;
-            font-size: 0.9em;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+
+        .success-message {
+            color: #28a745;
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
         }
     </style>
 </head>
@@ -113,34 +133,127 @@
 
 <div class="login-container">
     <h2>ورود به سیستم</h2>
-    <form method="post" action="/login"> <div class="input-group">
-        <label for="username">نام کاربری:</label>
-        <input type="text" id="username" name="username" required autocomplete="username">
-    </div>
+    <form id="loginForm">
+        <div class="input-group">
+            <label for="username">نام کاربری:</label>
+            <input type="text" id="username" name="username" required autocomplete="username">
+        </div>
         <div class="input-group">
             <label for="password">رمز عبور:</label>
             <input type="password" id="password" name="password" required autocomplete="current-password">
         </div>
-        <div class="error-message" id="loginErrorMessage">
+        <div class="message" id="loginMessage">
         </div>
         <button type="submit">ورود</button>
     </form>
 </div>
 
 <script>
-    // جاوا اسکریپت برای نمایش پیام خطا از URL
-    window.onload = function() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const errorParam = urlParams.get('error');
-        const logoutParam = urlParams.get('logout');
-        const errorMessageDiv = document.getElementById('loginErrorMessage');
-
-        if (errorParam) {
-            errorMessageDiv.innerText = 'نام کاربری یا رمز عبور اشتباه است.';
-        } else if (logoutParam) {
-            errorMessageDiv.innerText = 'شما با موفقیت خارج شدید.';
-            errorMessageDiv.style.color = '#28a745'; // رنگ سبز برای پیام موفقیت
+    // This part of the code is for the login page specifically.
+    // It handles displaying messages on the login form.
+    function showLoginMessage(message, type) {
+        const messageDiv = document.getElementById('loginMessage');
+        messageDiv.innerText = message;
+        messageDiv.className = 'message'; // Reset classes
+        if (type === 'error') {
+            messageDiv.classList.add('error-message');
+        } else if (type === 'success') {
+            messageDiv.classList.add('success-message');
         }
+    }
+
+    // Function to handle fetching and redirecting based on API response status.
+    // This is the core logic that ensures JWT authentication behavior.
+    function handleApiResponse(response) {
+        if (response.status === 401 || response.status === 403) {
+            console.error("Unauthorized or Forbidden access. Redirecting to login.");
+            localStorage.removeItem('jwtToken'); // Remove invalid token
+            // Redirect to login page with an error message
+            window.location.href = '/login.html?error=unauthorized';
+            throw new Error("Unauthorized or Forbidden"); // Stop further processing
+        }
+        return response; // Return the response for further processing
+    }
+
+    // Function to provide authentication headers with JWT token.
+    function getAuthHeaders() {
+        const token = localStorage.getItem('jwtToken');
+        if (token) {
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            };
+        } else {
+            console.error("JWT token not found. Redirecting to login.");
+            window.location.href = '/login.html?error=session_expired';
+            return {}; // Return empty object to prevent errors in fetch call
+        }
+    }
+
+    // Function to handle logout, clearing token and redirecting.
+    function logout() {
+        localStorage.removeItem('jwtToken'); // Remove token from Local Storage
+        // Optionally, send a request to a backend logout endpoint if Spring Security manages sessions (not strictly needed for stateless JWT)
+        fetch('/perform_logout', {method: 'POST'})
+            .finally(() => {
+                window.location.href = '/login.html?logout=true'; // Redirect to login page
+            });
+    }
+
+
+    // Event listener for the login form submission
+    document.getElementById('loginForm').addEventListener('submit', function (event) {
+        event.preventDefault(); // Prevent default form submission
+
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+
+        fetch('/authenticate', { // JWT login endpoint
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({username, password})
+        })
+            .then(response => {
+                if (response.ok) {
+                    return response.json(); // Expect JSON response containing JWT
+                } else {
+                    // If response is not OK, try to read the error message from the body
+                    return response.text().then(text => {
+                        throw new Error(text || 'نام کاربری یا رمز عبور اشتباه است.');
+                    });
+                }
+            })
+            .then(data => {
+                // Store the received JWT in localStorage
+                localStorage.setItem('jwtToken', data.jwt);
+                console.log('JWT Token stored:', data.jwt);
+                showLoginMessage('ورود موفقیت آمیز بود!', 'success');
+                // Redirect user to the dashboard page after successful login
+                window.location.href = '/dashboard.html';
+            })
+            .catch(error => {
+                console.error('Login failed:', error);
+                showLoginMessage(error.message || 'خطا در ورود به سیستم.', 'error');
+            });
+    });
+
+    // Code to execute when the page loads
+    window.onload = function () {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('error')) {
+            showLoginMessage('نام کاربری یا رمز عبور اشتباه است.', 'error');
+        } else if (urlParams.get('logout')) {
+            showLoginMessage('شما با موفقیت خارج شدید.', 'success');
+            // When logging out, ensure the token is removed from localStorage
+            localStorage.removeItem('jwtToken');
+        }
+        // If user tries to access this page directly but has a token, consider redirecting them
+        // This is optional, but often useful for authenticated users who land on login page
+        // if (localStorage.getItem('jwtToken')) {
+        //     window.location.href = '/dashboard'; // Assuming they should go to dashboard if already logged in
+        // }
     };
 </script>
 

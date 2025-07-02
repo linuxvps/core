@@ -52,7 +52,7 @@ public class UserService {
 
             userRepository.save(admin); //
 
-            System.out.println("✅ Default admin user created: admin / admin123");
+            System.out.println("✅ Default admin user created: admin / admin");
         }
     }
 
