@@ -17,6 +17,7 @@ public class GlobalExceptionHandler {
      * این متد به صورت خودکار خطای BadCredentialsException را از هر جای برنامه گرفته
      * و یک پاسخ استاندارد JSON با کد 401 برمی‌گرداند.
      */
+
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<Map<String, String>> handleBadCredentialsException(BadCredentialsException ex) {
         Map<String, String> errorResponse = new HashMap<>();
