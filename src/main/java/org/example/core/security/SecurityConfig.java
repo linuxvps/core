@@ -58,9 +58,13 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // اجازه دسترسی عمومی به اندپوینت‌های احراز هویت و صفحات استاتیک
+                        // **FIX 2: اصلاح مسیرهای عمومی**
                         .requestMatchers(
-                                "/login.html", "/authenticate", "/oauth2/**", "/login/oauth2/code/**",
-                                "/", "/index.html", "/css/**", "/js/**"
+                                "/api/auth/**", // برای لاگین با JWT
+                                "/api/users",    // برای ثبت نام کاربر جدید
+                                "/oauth2/**",    // برای فرآیند OAuth2
+                                "/login/oauth2/code/**", // برای redirect گوگل
+                                "/authenticate"
                         ).permitAll()
                         // دسترسی به صفحات مدیریتی فقط برای کاربران با نقش "ADMIN"
                         .requestMatchers(

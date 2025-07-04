@@ -19,7 +19,6 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/users") // تغییر مسیر اصلی به /api/users برای استانداردسازی API
-@PreAuthorize("hasRole('ADMIN')") // تمام متدهای این کنترلر فقط برای ADMIN قابل دسترسی است
 public class UserController {
 
     @Autowired
@@ -55,7 +54,8 @@ public class UserController {
      * @param id شناسه کاربر برای حذف.
      * @return ResponseEntity با وضعیت OK در صورت موفقیت یا NOT_FOUND در صورت عدم وجود کاربر.
      */
-    @DeleteMapping("/{id}") // DELETE /api/users/{id}
+    @DeleteMapping("/{id}")
+    @PreAuthorize("isAuthenticated()") // فقط کاربرانی که لاگین کرده‌اند می‌توانند به این اندپوینت دسترسی داشته باشند.
     public ResponseEntity<?> deleteUser(@PathVariable Long id) {
         try {
             userService.deleteUser(id);
@@ -90,7 +90,7 @@ public class UserController {
      */
     @GetMapping("/{userId}/roles") // GET /api/users/{userId}/roles
     // این متد فقط باید توسط ادمین قابل دسترسی باشد
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("isAuthenticated()") // فقط کاربرانی که لاگین کرده‌اند می‌توانند به این اندپوینت دسترسی داشته باشند.
     public ResponseEntity<?> getUserRoles(@PathVariable Long userId) {
         try {
             List<String> roles = userService.getUserRoleNames(userId);
