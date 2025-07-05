@@ -61,7 +61,7 @@ public class SecurityConfig {
                         // **FIX 2: اصلاح مسیرهای عمومی**
                         .requestMatchers(
                                 "/api/auth/**", // برای لاگین با JWT
-                                "/api/users",    // برای ثبت نام کاربر جدید
+                                "/register",    // برای ثبت نام کاربر جدید
                                 "/oauth2/**",    // برای فرآیند OAuth2
                                 "/login/oauth2/code/**", // برای redirect گوگل
                                 "/authenticate"

@@ -75,6 +75,9 @@ public class UserService {
         User user = new User(); //
         user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword())); // Hash the password
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setPhoneNumber(request.getPhoneNumber());
         user.setEnabled(true); //
 
         // Find roles based on the provided role names
