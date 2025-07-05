@@ -1,6 +1,7 @@
 package org.example.core.controller;
 
 import org.example.core.dto.CreateUserRequest;
+import org.example.core.dto.UpdateUserProfileRequest;
 import org.example.core.dto.UserResponse;
 import org.example.core.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -150,6 +151,27 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User profile not found.");
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body("An error occurred while fetching the user profile.");
+        }
+    }
+
+    /**
+     * متد جدید: به‌روزرسانی اطلاعات پروفایل کاربر لاگین کرده.
+     * @param principal اطلاعات کاربر احراز هویت شده.
+     * @param request DTO شامل اطلاعات جدید برای به‌روزرسانی.
+     * @return ResponseEntity با پیام موفقیت یا خطا.
+     */
+    @PutMapping("/me") // PUT /api/users/me
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> updateCurrentUserProfile(Principal principal, @RequestBody UpdateUserProfileRequest request) {
+        try {
+            String username = principal.getName();
+            // شما باید متد زیر را در UserService خود پیاده‌سازی کنید
+            userService.updateUserProfile(username, request);
+            return ResponseEntity.ok("Profile updated successfully.");
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found.");
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("An error occurred while updating the profile.");
         }
     }
 

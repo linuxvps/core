@@ -1,6 +1,7 @@
 package org.example.core.service;
 
 import org.example.core.dto.CreateUserRequest;
+import org.example.core.dto.UpdateUserProfileRequest;
 import org.example.core.dto.UserResponse;
 import org.example.core.model.Role;
 import org.example.core.model.User;
@@ -196,5 +197,17 @@ public class UserService {
 
         return response;
     }
+
+    public void updateUserProfile(String username, UpdateUserProfileRequest request) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new NoSuchElementException("User not found with username: " + username));
+
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setPhoneNumber(request.getPhoneNumber());
+
+        userRepository.save(user);
+    }
+
 
 }
