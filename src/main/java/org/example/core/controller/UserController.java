@@ -1,6 +1,5 @@
 package org.example.core.controller;
 
-import org.example.core.dto.CreateUserRequest;
 import org.example.core.dto.UpdateUserProfileRequest;
 import org.example.core.dto.UserResponse;
 import org.example.core.service.UserService;
@@ -14,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.List;
-import java.util.Map; // برای دریافت نام نقش از JSON
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 

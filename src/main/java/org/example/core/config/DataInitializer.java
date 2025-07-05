@@ -103,6 +103,17 @@ public class DataInitializer implements CommandLineRunner {
             )));
             roleRepository.save(userRole);
             System.out.println("✅ نقش 'ROLE_USER' اضافه شد.");
+
+
+
+            Role roleLawyer = new Role();
+            roleLawyer.setName("ROLE_LAWYER");
+            roleLawyer.setPermissions(new HashSet<>(Arrays.asList(
+                    permViewDashboard,
+                    permViewReports
+            )));
+            roleRepository.save(roleLawyer);
+            System.out.println("lawyer adddddddddddd");
         }
 
         // 2. ایجاد کاربر ادمین پیش‌فرض (این متد فقط کاربر را با استفاده از نقش‌های موجود ایجاد می‌کند)

@@ -63,11 +63,6 @@ public class UserService {
      * @param request CreateUserRequest object containing username, password, and role names.
      */
     public void createUser(CreateUserRequest request) {
-        if (request.getRoles() == null) {
-            ArrayList<String> roles = new ArrayList<>();
-            roles.add("ROLE_USER");
-            request.setRoles(roles);
-        }
         // Check if username already exists
         if (userRepository.findByUsername(request.getUsername()).isPresent()) { //
             throw new IllegalArgumentException("Username " + request.getUsername() + " already exists.");
