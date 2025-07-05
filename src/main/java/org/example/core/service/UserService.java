@@ -180,4 +180,21 @@ public class UserService {
          user.setRoles(rolesToSet);
          userRepository.save(user);
      }
+
+
+    public UserResponse getUserProfileByUsername(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new NoSuchElementException("User not found with username: " + username));
+
+        // در اینجا User entity را به UserResponse DTO تبدیل می‌کنید
+        UserResponse response = new UserResponse();
+        response.setFirstName(user.getFirstName());
+        response.setLastName(user.getLastName());
+        response.setPhoneNumber(user.getPhoneNumber());
+        response.setUsername(user.getUsername());
+
+
+        return response;
+    }
+
 }

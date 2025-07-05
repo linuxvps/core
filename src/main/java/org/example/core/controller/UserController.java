@@ -11,6 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.Map; // برای دریافت نام نقش از JSON
 import java.util.NoSuchElementException;
@@ -30,23 +31,6 @@ public class UserController {
     @GetMapping // GET /api/users
     public List<UserResponse> getAllUsers() {
         return userService.getAllUsers();
-    }
-
-    /**
-     * ایجاد یک کاربر جدید.
-     * @param request درخواست شامل نام کاربری، رمز عبور و نقش‌ها.
-     * @return ResponseEntity با وضعیت OK در صورت موفقیت یا BAD_REQUEST در صورت خطا.
-     */
-    @PostMapping // POST /api/users
-    public ResponseEntity<?> createUser(@RequestBody CreateUserRequest request) {
-        try {
-            userService.createUser(request);
-            return ResponseEntity.status(HttpStatus.CREATED).body("کاربر با موفقیت ایجاد شد."); // 201 Created
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage()); // 400 Bad Request
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("خطایی در ایجاد کاربر رخ داد: " + e.getMessage()); // 500 Internal Server Error
-        }
     }
 
     /**
@@ -141,4 +125,32 @@ public class UserController {
              return ResponseEntity.badRequest().body(e.getMessage());
          }
      }
+
+
+    /**
+     * متد جدید: دریافت اطلاعات پروفایل کاربر لاگین کرده.
+     * این متد نام کاربری را از توکن JWT (از طریق Principal) دریافت کرده
+     * و اطلاعات کاربر را از دیتابیس برمی‌گرداند.
+     * @param principal اطلاعات کاربر احراز هویت شده که توسط Spring Security فراهم می‌شود.
+     * @return ResponseEntity شامل اطلاعات پروفایل کاربر.
+     */
+    @GetMapping("/me") // GET /api/users/me
+    @PreAuthorize("isAuthenticated()") // فقط کاربرانی که لاگین کرده‌اند می‌توانند به این اندپوینت دسترسی داشته باشند.
+    public ResponseEntity<?> getCurrentUserProfile(Principal principal) {
+        try {
+            // نام کاربری (که در اینجا ایمیل است) از Principal گرفته می‌شود
+            // این روش امن است و Spring Security آن را تضمین می‌کند.
+            String username = principal.getName();
+
+            // شما باید متد زیر را در UserService خود پیاده‌سازی کنید
+            UserResponse userProfile = userService.getUserProfileByUsername(username);
+
+            return ResponseEntity.ok(userProfile);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User profile not found.");
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("An error occurred while fetching the user profile.");
+        }
+    }
+
 }
