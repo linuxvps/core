@@ -33,16 +33,18 @@ public class RegisterController {
         }
     }
 
-    @PostMapping("/lawyer")
-    public ResponseEntity<?> registerLawyer(@RequestBody CreateUserRequest request) {
+    // به جای /lawyer از یک نام عمومی‌تر استفاده می‌کنیم
+    @PostMapping("/professional")
+    public ResponseEntity<?> registerProfessional(@RequestBody CreateUserRequest request) {
         try {
-            request.setRoles(List.of("ROLE_LAWYER"));
+            // نقش کاربر را نیز به نام عمومی جدید تغییر می‌دهیم
+            request.setRoles(List.of("ROLE_PROFESSIONAL"));
             userService.createUser(request);
-            return ResponseEntity.status(HttpStatus.CREATED).body("lawyer create successfully."); // 201 Created
+            return ResponseEntity.status(HttpStatus.CREATED).body("Professional user registered successfully.");
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage()); // 400 Bad Request
+            return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("An error occurred while creating the user :" + e.getMessage()); // 500 Internal Server Error
+            return ResponseEntity.internalServerError().body("An error occurred while creating the user: " + e.getMessage());
         }
     }
 }

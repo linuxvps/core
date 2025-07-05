@@ -106,14 +106,14 @@ public class DataInitializer implements CommandLineRunner {
 
 
 
-            Role roleLawyer = new Role();
-            roleLawyer.setName("ROLE_LAWYER");
-            roleLawyer.setPermissions(new HashSet<>(Arrays.asList(
+            Role roleProfessional = new Role();
+            roleProfessional.setName("ROLE_PROFESSIONAL");
+            roleProfessional.setPermissions(new HashSet<>(Arrays.asList(
                     permViewDashboard,
                     permViewReports
             )));
-            roleRepository.save(roleLawyer);
-            System.out.println("lawyer adddddddddddd");
+            roleRepository.save(roleProfessional);
+            System.out.println("roleProfessional adddddddddddd");
         }
 
         // 2. ایجاد کاربر ادمین پیش‌فرض (این متد فقط کاربر را با استفاده از نقش‌های موجود ایجاد می‌کند)
