@@ -1,88 +1,41 @@
 package org.example.core.model;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import org.example.core.model.enums.UserType;
+
 import java.util.HashSet;
 import java.util.Set;
 
 @Entity
 @Table(name = "users")
+@Getter // به صورت خودکار تمام متدهای getter را برای فیلدها ایجاد می‌کند
+@Setter // به صورت خودکار تمام متدهای setter را برای فیلدها ایجاد می‌کند
+@NoArgsConstructor // یک constructor بدون آرگومان (که برای JPA لازم است) ایجاد می‌کند
+@AllArgsConstructor // یک constructor با تمام فیلدها به عنوان آرگومان ایجاد می‌کند
 public class User {
+
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true, nullable = false)
     private String username;
+
+    @Column(nullable = false)
     private String password;
+
     private String phoneNumber;
-
     private String firstName;
-
     private String lastName;
     private boolean enabled = true;
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
-
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
-    }
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
-
-    public Set<Role> getRoles() {
-        return roles;
-    }
-
-    public void setRoles(Set<Role> roles) {
-        this.roles = roles;
-    }
+    @Enumerated(EnumType.STRING)
+    @Column(name = "user_type", nullable = false)
+    private UserType userType;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -91,4 +44,12 @@ public class User {
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<Role> roles = new HashSet<>();
+
+
+    /**
+     * رابطه یک-به-یک با Professional.
+     * mappedBy = "user" مشخص می‌کند که مدیریت این رابطه توسط فیلد 'user' در کلاس Professional انجام می‌شود.
+     */
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Professional professional;
 }

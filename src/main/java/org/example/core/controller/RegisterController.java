@@ -1,6 +1,7 @@
 package org.example.core.controller;
 
 import org.example.core.dto.CreateUserRequest;
+import org.example.core.model.enums.UserType;
 import org.example.core.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -24,6 +25,7 @@ public class RegisterController {
     public ResponseEntity<?> register(@RequestBody CreateUserRequest request) {
         try {
             request.setRoles(List.of("ROLE_USER"));
+            request.setUserType(UserType.CLIENT);
             userService.createUser(request);
             return ResponseEntity.status(HttpStatus.CREATED).body("user create successfully."); // 201 Created
         } catch (IllegalArgumentException e) {
@@ -39,6 +41,7 @@ public class RegisterController {
         try {
             // نقش کاربر را نیز به نام عمومی جدید تغییر می‌دهیم
             request.setRoles(List.of("ROLE_PROFESSIONAL"));
+            request.setUserType(UserType.PROFESSIONAL);
             userService.createUser(request);
             return ResponseEntity.status(HttpStatus.CREATED).body("Professional user registered successfully.");
         } catch (IllegalArgumentException e) {

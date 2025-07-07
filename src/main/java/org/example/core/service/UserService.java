@@ -3,8 +3,11 @@ package org.example.core.service;
 import org.example.core.dto.CreateUserRequest;
 import org.example.core.dto.UpdateUserProfileRequest;
 import org.example.core.dto.UserResponse;
+import org.example.core.dto.reserve.ProfessionalProfileDto;
+import org.example.core.model.Professional;
 import org.example.core.model.Role;
 import org.example.core.model.User;
+import org.example.core.model.enums.UserType;
 import org.example.core.repository.PermissionRepository;
 import org.example.core.repository.RoleRepository;
 import org.example.core.repository.UserRepository;
@@ -50,7 +53,7 @@ public class UserService {
             admin.setPassword(passwordEncoder.encode("admin")); // Hash the password
             admin.setEnabled(true); //
             admin.setRoles(Collections.singleton(adminRole)); // Assign the admin role
-
+            admin.setUserType(UserType.ADMIN);
             userRepository.save(admin); //
 
             System.out.println("✅ Default admin user created: admin / admin");
@@ -75,6 +78,7 @@ public class UserService {
         user.setLastName(request.getLastName());
         user.setPhoneNumber(request.getPhoneNumber());
         user.setEnabled(true); //
+        user.setUserType(request.getUserType());
 
         // Find roles based on the provided role names
         Set<Role> roles = new HashSet<>(roleRepository.findByNameIn(request.getRoles())); //
@@ -203,6 +207,5 @@ public class UserService {
 
         userRepository.save(user);
     }
-
 
 }
