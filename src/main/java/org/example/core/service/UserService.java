@@ -70,39 +70,51 @@ public class UserService {
      * @param request CreateUserRequest object containing username, password, and role names.
      */
     public void createUser(CreateUserRequest request) {
+        // 1. Validate if the username already exists.
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new IllegalArgumentException("Username " + request.getUsername() + " already exists.");
         }
 
-        // ۱. ساختن و مقداردهی آبجکت User
+        // 2. Create and populate the User object with basic information.
         User user = new User();
         user.setUsername(request.getUsername());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setPassword(passwordEncoder.encode(request.getPassword())); // Always encode passwords!
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
         user.setPhoneNumber(request.getPhoneNumber());
-        user.setEnabled(true);
+        user.setEnabled(true); // Default to enabled
         user.setUserType(request.getUserType());
 
+        // 3. Assign roles to the user.
         Set<Role> roles = new HashSet<>(roleRepository.findByNameIn(request.getRoles()));
         user.setRoles(roles);
 
-        // ۲. ذخیره کردن کاربر در دیتابیس
+        // 4. Save the User to the database. This generates the User's unique ID.
         User savedUser = userRepository.save(user);
 
-        // ۳. **بخش کلیدی:** اگر کاربر یک متخصص بود، پروفایل او را نیز ایجاد می‌کنیم
+        // 5. Conditional creation of Professional profile:
+        // If the user type is PROFESSIONAL, create and link their professional profile.
         if (savedUser.getUserType() == UserType.PROFESSIONAL) {
             Professional professional = new Professional();
-            professional.setUser(savedUser); // برقراری رابطه
+            // Establish the one-to-one relationship.
+            // The 'user' field in Professional is now a foreign key pointing to the User entity.
+            professional.setUser(savedUser);
 
+            // Populate professional-specific details if the request is a CreateProfessionalRequest.
             if (request instanceof CreateProfessionalRequest profRequest) {
                 professional.setSpecialty(profRequest.getSpecialty());
                 professional.setBio(profRequest.getBio());
+                professional.setConsultationDurationMinutes(profRequest.getConsultationDurationMinutes());
+                professional.setConsultationPrice(profRequest.getConsultationPrice());
+                professional.setProfilePictureUrl(profRequest.getProfilePictureUrl());
             }
 
+            // Save the professional profile. This will generate a new, independent ID for the Professional,
+            // and link it to the User via the 'user_id' column in the professionals table.
             professionalRepository.save(professional);
         }
     }
+
     /**
      * Retrieves a list of all users with their role names.
      *

@@ -1,3 +1,4 @@
+// Professional.java (تغییرات اصلی)
 package org.example.core.model;
 
 import jakarta.persistence.*;
@@ -9,7 +10,7 @@ import lombok.AllArgsConstructor;
 import java.math.BigDecimal;
 
 /**
- * کلاس Professional که با Lombok بازنویسی شده و "مالک" رابطه یک-به-یک با User است.
+ * کلاس Professional که با Lombok بازنویسی شده و دارای ID مستقل و یک userId برای ارتباط است.
  */
 @Entity
 @Table(name = "professionals")
@@ -20,17 +21,20 @@ import java.math.BigDecimal;
 public class Professional {
 
     @Id
-    private Long id; // این ID همان ID کاربر در جدول users خواهد بود
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id; // این ID، کلید اصلی مستقل و خودکار برای خود Professional است.
 
     /**
      * رابطه یک-به-یک با User.
-     * MapsId مشخص می‌کند که ID این جدول (که کلید اصلی است) توسط رابطه با User مدیریت می‌شود.
-     * این کار باعث می‌شود که id در این جدول، هم کلید اصلی و هم کلید خارجی باشد.
+     * @JoinColumn("user_id") ایجاد یک ستون 'user_id' در جدول professionals می‌کند که
+     * به 'id' جدول users ارجاع می‌دهد (کلید خارجی).
+     * این کلاس "مالک" رابطه است زیرا شامل JoinColumn است.
+     * FetchType.LAZY برای بارگذاری تأخیری User.
+     * optional = false به این معنی است که هر Professional باید یک User مرتبط داشته باشد.
      */
-    @OneToOne(fetch = FetchType.LAZY)
-    @MapsId
-    @JoinColumn(name = "id")
-    private User user;
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", unique = true) // 'user_id' اینجا کلید خارجی است. 'unique = true' برای تضمین یک به یک بودن
+    private User user; // این فیلد نماینده User مرتبط است و پشت صحنه به user_id در دیتابیس مپ می‌شود.
 
     @Column(length = 100)
     private String specialty; // تخصص (مثلاً: وکیل خانواده)

@@ -48,8 +48,11 @@ public class User {
 
     /**
      * رابطه یک-به-یک با Professional.
-     * mappedBy = "user" مشخص می‌کند که مدیریت این رابطه توسط فیلد 'user' در کلاس Professional انجام می‌شود.
+     * mappedBy = "user" مشخص می‌کند که Professional "صاحب" این رابطه در دیتابیس است (یعنی Professional دارای ستون کلید خارجی است).
+     * cascade = CascadeType.ALL برای حفظ یکپارچگی داده‌ها بین User و Professional.
+     * FetchType.LAZY برای بارگذاری تأخیری Professional.
      */
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private Professional professional;
+
 }
