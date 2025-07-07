@@ -1,5 +1,6 @@
 package org.example.core.service;
 
+import org.example.core.dto.CreateProfessionalRequest;
 import org.example.core.dto.CreateUserRequest;
 import org.example.core.dto.UpdateUserProfileRequest;
 import org.example.core.dto.UserResponse;
@@ -11,6 +12,7 @@ import org.example.core.model.enums.UserType;
 import org.example.core.repository.PermissionRepository;
 import org.example.core.repository.RoleRepository;
 import org.example.core.repository.UserRepository;
+import org.example.core.repository.reserve.ProfessionalRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,8 @@ public class UserService {
     private PermissionRepository permissionRepository; // Still needed for createUser if it involves fetching permissions directly
     @Autowired
     private PasswordEncoder passwordEncoder;
+    @Autowired
+    private ProfessionalRepository professionalRepository;
 
     /**
      * Creates a default admin user if no users exist in the database.
@@ -66,31 +70,39 @@ public class UserService {
      * @param request CreateUserRequest object containing username, password, and role names.
      */
     public void createUser(CreateUserRequest request) {
-        // Check if username already exists
-        if (userRepository.findByUsername(request.getUsername()).isPresent()) { //
+        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new IllegalArgumentException("Username " + request.getUsername() + " already exists.");
         }
 
-        User user = new User(); //
+        // ۱. ساختن و مقداردهی آبجکت User
+        User user = new User();
         user.setUsername(request.getUsername());
-        user.setPassword(passwordEncoder.encode(request.getPassword())); // Hash the password
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
         user.setPhoneNumber(request.getPhoneNumber());
-        user.setEnabled(true); //
+        user.setEnabled(true);
         user.setUserType(request.getUserType());
 
-        // Find roles based on the provided role names
-        Set<Role> roles = new HashSet<>(roleRepository.findByNameIn(request.getRoles())); //
-        if (roles.size() != request.getRoles().size()) {
-            // If the number of found roles doesn't match the requested, some roles are invalid
-            throw new IllegalArgumentException("One or more provided roles are invalid or not found.");
+        Set<Role> roles = new HashSet<>(roleRepository.findByNameIn(request.getRoles()));
+        user.setRoles(roles);
+
+        // ۲. ذخیره کردن کاربر در دیتابیس
+        User savedUser = userRepository.save(user);
+
+        // ۳. **بخش کلیدی:** اگر کاربر یک متخصص بود، پروفایل او را نیز ایجاد می‌کنیم
+        if (savedUser.getUserType() == UserType.PROFESSIONAL) {
+            Professional professional = new Professional();
+            professional.setUser(savedUser); // برقراری رابطه
+
+            if (request instanceof CreateProfessionalRequest profRequest) {
+                professional.setSpecialty(profRequest.getSpecialty());
+                professional.setBio(profRequest.getBio());
+            }
+
+            professionalRepository.save(professional);
         }
-        user.setRoles(roles); //
-
-        userRepository.save(user); //
     }
-
     /**
      * Retrieves a list of all users with their role names.
      *

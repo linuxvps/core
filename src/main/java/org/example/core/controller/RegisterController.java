@@ -1,5 +1,6 @@
 package org.example.core.controller;
 
+import org.example.core.dto.CreateProfessionalRequest;
 import org.example.core.dto.CreateUserRequest;
 import org.example.core.model.enums.UserType;
 import org.example.core.service.UserService;
@@ -21,7 +22,7 @@ public class RegisterController {
     @Autowired
     private UserService userService;
 
-    @PostMapping("/user")
+    @PostMapping("/client")
     public ResponseEntity<?> register(@RequestBody CreateUserRequest request) {
         try {
             request.setRoles(List.of("ROLE_USER"));
@@ -37,7 +38,7 @@ public class RegisterController {
 
     // به جای /lawyer از یک نام عمومی‌تر استفاده می‌کنیم
     @PostMapping("/professional")
-    public ResponseEntity<?> registerProfessional(@RequestBody CreateUserRequest request) {
+    public ResponseEntity<?> registerProfessional(@RequestBody CreateProfessionalRequest request) {
         try {
             // نقش کاربر را نیز به نام عمومی جدید تغییر می‌دهیم
             request.setRoles(List.of("ROLE_PROFESSIONAL"));

@@ -1,5 +1,6 @@
 package org.example.core.config;
 
+import org.example.core.dto.CreateProfessionalRequest;
 import org.example.core.dto.CreateUserRequest;
 import org.example.core.model.Permission;
 import org.example.core.model.Role;
@@ -12,7 +13,6 @@ import org.example.core.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
@@ -95,13 +95,29 @@ public class DataInitializer implements CommandLineRunner {
         if (userRepository.count() < 5) {
             System.out.println("✅ Creating sample users...");
 
-            List<CreateUserRequest> sampleUsers = List.of(
-                    buildUserRequest("سارا", "رضایی", "sara.rezaei@example.com", "09121112233", UserType.PROFESSIONAL),
-                    buildUserRequest("علی", "احمدی", "ali.ahmadi@example.com", "09124445566", UserType.PROFESSIONAL),
-                    buildUserRequest("مریم", "حسینی", "maryam.hosseini@example.com", "09127778899", UserType.CLIENT)
+            List<CreateUserRequest> clients = List.of(
+                    buildClient("مریم", "حسینی", "maryam.hosseini@example.com", "09127778899", UserType.CLIENT)
             );
 
-            sampleUsers.forEach(request -> {
+            List<CreateProfessionalRequest> professional = List.of(
+                    buildProfessional("سارا", "رضایی", "sara.rezaei@example.com", "09121112233", UserType.PROFESSIONAL),
+                    buildProfessional("علی", "احمدی", "ali.ahmadi@example.com", "09124445566", UserType.PROFESSIONAL));
+
+
+            clients.forEach(request -> {
+                if (userRepository.findByUsername(request.getUsername()).isEmpty()) {
+                    try {
+                        // این متد باید در UserService اصلاح شود
+                        userService.createUser(request);
+                        System.out.println(" -> Created " + request.getUserType() + ": " + request.getUsername());
+                    } catch (Exception e) {
+                        System.err.println("❌ Error creating sample user '" + request.getUsername() + "': " + e.getMessage());
+                        e.printStackTrace(); // چاپ کامل خطا برای دیباگ بهتر
+                    }
+                }
+            });
+
+            professional.forEach(request -> {
                 if (userRepository.findByUsername(request.getUsername()).isEmpty()) {
                     try {
                         // این متد باید در UserService اصلاح شود
@@ -116,7 +132,7 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
-    private CreateUserRequest buildUserRequest(String firstName, String lastName, String email, String phone, UserType userType) {
+    private CreateUserRequest buildClient(String firstName, String lastName, String email, String phone, UserType userType) {
         CreateUserRequest request = new CreateUserRequest();
         request.setFirstName(firstName);
         request.setLastName(lastName);
@@ -124,13 +140,26 @@ public class DataInitializer implements CommandLineRunner {
         request.setPassword("password123");
         request.setPhoneNumber(phone);
         request.setUserType(userType);
+        request.setRoles(List.of("ROLE_CLIENT"));
 
-        if (UserType.PROFESSIONAL.equals(userType)) {
-            request.setRoles(List.of("ROLE_PROFESSIONAL"));
-        } else {
-            request.setRoles(List.of("ROLE_CLIENT"));
-        }
 
         return request;
     }
+
+    private CreateProfessionalRequest buildProfessional(String firstName, String lastName, String email, String phone, UserType userType) {
+        CreateProfessionalRequest request = new CreateProfessionalRequest();
+        request.setFirstName(firstName);
+        request.setLastName(lastName);
+        request.setUsername(email);
+        request.setPassword("password123");
+        request.setPhoneNumber(phone);
+        request.setUserType(userType);
+        request.setRoles(List.of("ROLE_PROFESSIONAL"));
+        request.setBio("my bio" + firstName);
+        request.setSpecialty("my specialty" + firstName);
+
+        return request;
+    }
+
+
 }
